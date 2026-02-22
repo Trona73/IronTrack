@@ -8,8 +8,6 @@ export interface Exercise {
   equipment: Equipment;
   muscleGroup: MuscleGroup;
   imageUrl?: string;
-  description?: string;
-  videoUrl?: string;
 }
 
 export interface PlannedSet {
@@ -40,6 +38,14 @@ export interface CompletedExercise {
   exerciseId: string;
   sets: CompletedSet[];
   durationSeconds: number;
+}
+
+export interface UserProfile {
+  name: string;
+  weight: number;
+  height: number;
+  age: number;
+  gender: 'male' | 'female' | 'other';
 }
 
 export interface WorkoutSession {

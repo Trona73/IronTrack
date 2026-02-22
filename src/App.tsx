@@ -1,15 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil } from 'lucide-react';
+import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { WorkoutPlan, WorkoutSession, Exercise, PlannedExercise, CompletedSet, CompletedExercise } from './types';
+import { WorkoutPlan, WorkoutSession, Exercise, PlannedExercise, CompletedSet, CompletedExercise, UserProfile } from './types';
 import { EXERCISES, MOCK_PLANS } from './data';
 
-type View = 'dashboard' | 'builder' | 'active' | 'history';
+type View = 'dashboard' | 'builder' | 'active' | 'history' | 'profile';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [plans, setPlans] = useState<WorkoutPlan[]>(MOCK_PLANS);
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
+  const [userProfile, setUserProfile] = useState<UserProfile>({
+    name: '',
+    weight: 0,
+    height: 0,
+    age: 0,
+    gender: 'other'
+  });
   const [activePlan, setActivePlan] = useState<WorkoutPlan | null>(null);
   const [planToEdit, setPlanToEdit] = useState<WorkoutPlan | null>(null);
   const [planToDelete, setPlanToDelete] = useState<string | null>(null);
@@ -18,15 +25,18 @@ export default function App() {
   useEffect(() => {
     const savedPlans = localStorage.getItem('iron_plans');
     const savedSessions = localStorage.getItem('iron_sessions');
+    const savedProfile = localStorage.getItem('iron_profile');
     if (savedPlans) setPlans(JSON.parse(savedPlans));
     if (savedSessions) setSessions(JSON.parse(savedSessions));
+    if (savedProfile) setUserProfile(JSON.parse(savedProfile));
   }, []);
 
   // Save to local storage
   useEffect(() => {
     localStorage.setItem('iron_plans', JSON.stringify(plans));
     localStorage.setItem('iron_sessions', JSON.stringify(sessions));
-  }, [plans, sessions]);
+    localStorage.setItem('iron_profile', JSON.stringify(userProfile));
+  }, [plans, sessions, userProfile]);
 
   const savePlan = (plan: WorkoutPlan) => {
     setPlans(prev => {
@@ -113,6 +123,13 @@ export default function App() {
               plans={plans}
             />
           )}
+          {currentView === 'profile' && (
+            <ProfileView 
+              key="profile" 
+              profile={userProfile} 
+              onSave={setUserProfile}
+            />
+          )}
         </AnimatePresence>
 
         {/* Confirmation Modal */}
@@ -176,6 +193,12 @@ export default function App() {
               isActive={currentView === 'history'} 
               onClick={() => setCurrentView('history')} 
             />
+            <NavItem 
+              icon={<User size={24} />} 
+              label="Perfil" 
+              isActive={currentView === 'profile'} 
+              onClick={() => setCurrentView('profile')} 
+            />
           </div>
         </nav>
       )}
@@ -199,6 +222,12 @@ function NavItem({ icon, label, isActive, onClick }: { icon: React.ReactNode, la
 function DashboardView({ plans, onStartWorkout, onNewPlan, onEditPlan, onDeletePlan, key }: { plans: WorkoutPlan[], onStartWorkout: (p: WorkoutPlan) => void, onNewPlan: () => void, onEditPlan: (p: WorkoutPlan) => void, onDeletePlan: (id: string) => void, key?: React.Key }) {
   const today = new Date().getDay();
   const todaysPlans = plans.filter(p => p.daysOfWeek.includes(today));
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <motion.div 
@@ -207,9 +236,19 @@ function DashboardView({ plans, onStartWorkout, onNewPlan, onEditPlan, onDeleteP
       exit={{ opacity: 0, y: -20 }}
       className="p-6 space-y-8"
     >
-      <header className="pt-8">
-        <h1 className="text-4xl font-bold tracking-tighter">Iron<span className="text-emerald-500">Track</span></h1>
-        <p className="text-zinc-400 mt-2 font-mono text-sm">SUA ROTINA DE FORÇA</p>
+      <header className="pt-8 flex justify-between items-end">
+        <div>
+          <h1 className="text-4xl font-bold tracking-tighter">Iron<span className="text-emerald-500">Track</span></h1>
+          <p className="text-zinc-400 mt-2 font-mono text-sm">SUA ROTINA DE FORÇA</p>
+        </div>
+        <div className="text-right">
+          <div className="text-xl font-bold text-zinc-200 font-mono">
+            {time.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+          </div>
+          <div className="text-xs text-zinc-500 font-mono uppercase">
+            {time.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })}
+          </div>
+        </div>
       </header>
 
       <section>
@@ -829,6 +868,166 @@ function HistoryView({ sessions, plans, key }: { sessions: WorkoutSession[], pla
           })}
         </div>
       )}
+    </motion.div>
+  );
+}
+
+// --- Profile View ---
+function ProfileView({ profile, onSave, key }: { profile: UserProfile, onSave: (p: UserProfile) => void, key?: React.Key }) {
+  const [localProfile, setLocalProfile] = useState(profile);
+  const [isEditing, setIsEditing] = useState(false);
+
+  const handleChange = (field: keyof UserProfile, value: string | number) => {
+    setLocalProfile(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSave = () => {
+    onSave(localProfile);
+    setIsEditing(false);
+  };
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="p-6 pt-12 space-y-8"
+    >
+      <header className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight mb-2">Perfil</h1>
+          <p className="text-zinc-400">Seus dados pessoais.</p>
+        </div>
+        {!isEditing ? (
+          <button 
+            onClick={() => setIsEditing(true)}
+            className="p-2 bg-zinc-800 rounded-full text-zinc-300 hover:text-white hover:bg-zinc-700 transition-colors"
+          >
+            <Pencil size={20} />
+          </button>
+        ) : (
+          <div className="flex gap-2">
+            <button 
+              onClick={() => {
+                setLocalProfile(profile);
+                setIsEditing(false);
+              }}
+              className="p-2 bg-zinc-800 rounded-full text-zinc-300 hover:text-white hover:bg-zinc-700 transition-colors"
+            >
+              <X size={20} />
+            </button>
+            <button 
+              onClick={handleSave}
+              className="p-2 bg-emerald-500 rounded-full text-zinc-950 hover:bg-emerald-400 transition-colors"
+            >
+              <Save size={20} />
+            </button>
+          </div>
+        )}
+      </header>
+
+      <div className="space-y-6">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-4">
+          <div>
+            <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Nome</label>
+            {isEditing ? (
+              <input 
+                type="text" 
+                value={localProfile.name}
+                onChange={e => handleChange('name', e.target.value)}
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-emerald-500 transition-colors"
+                placeholder="Seu nome"
+              />
+            ) : (
+              <div className="text-xl font-medium">{profile.name || 'Não informado'}</div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Peso (kg)</label>
+              {isEditing ? (
+                <input 
+                  type="number" 
+                  value={localProfile.weight || ''}
+                  onChange={e => handleChange('weight', parseFloat(e.target.value) || 0)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-emerald-500 transition-colors"
+                  placeholder="0.0"
+                />
+              ) : (
+                <div className="text-xl font-medium">{profile.weight ? `${profile.weight} kg` : '-'}</div>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Altura (cm)</label>
+              {isEditing ? (
+                <input 
+                  type="number" 
+                  value={localProfile.height || ''}
+                  onChange={e => handleChange('height', parseInt(e.target.value) || 0)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-emerald-500 transition-colors"
+                  placeholder="0"
+                />
+              ) : (
+                <div className="text-xl font-medium">{profile.height ? `${profile.height} cm` : '-'}</div>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Idade</label>
+              {isEditing ? (
+                <input 
+                  type="number" 
+                  value={localProfile.age || ''}
+                  onChange={e => handleChange('age', parseInt(e.target.value) || 0)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-emerald-500 transition-colors"
+                  placeholder="0"
+                />
+              ) : (
+                <div className="text-xl font-medium">{profile.age ? `${profile.age} anos` : '-'}</div>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Gênero</label>
+              {isEditing ? (
+                <select 
+                  value={localProfile.gender}
+                  onChange={e => handleChange('gender', e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
+                >
+                  <option value="male">Masculino</option>
+                  <option value="female">Feminino</option>
+                  <option value="other">Outro</option>
+                </select>
+              ) : (
+                <div className="text-xl font-medium">
+                  {profile.gender === 'male' ? 'Masculino' : profile.gender === 'female' ? 'Feminino' : 'Outro'}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Summary */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+            <div className="text-zinc-500 mb-2">IMC</div>
+            <div className="text-2xl font-bold text-emerald-400">
+              {profile.weight && profile.height 
+                ? (profile.weight / ((profile.height / 100) ** 2)).toFixed(1)
+                : '-'}
+            </div>
+          </div>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+            <div className="text-zinc-500 mb-2">Meta Diária</div>
+            <div className="text-2xl font-bold text-emerald-400">
+              {profile.weight ? Math.round(profile.weight * 30) : '-'} <span className="text-sm text-zinc-500 font-normal">kcal</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </motion.div>
   );
 }
