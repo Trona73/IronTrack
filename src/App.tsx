@@ -233,7 +233,7 @@ export default function App() {
       {/* Bottom Navigation */}
       {currentView !== 'active' && (
         <nav className="fixed bottom-0 left-0 right-0 bg-zinc-900/80 backdrop-blur-xl border-t border-zinc-800/50 pb-[env(safe-area-inset-bottom)]">
-          <div className="max-w-md mx-auto flex justify-around items-center p-4">
+          <div className="max-w-md mx-auto grid grid-cols-5 items-center p-4">
             <NavItem 
               icon={<Home size={24} />} 
               label="Início" 
@@ -275,10 +275,10 @@ function NavItem({ icon, label, isActive, onClick }: { icon: React.ReactNode, la
   return (
     <button 
       onClick={onClick}
-      className={`flex flex-col items-center gap-1 transition-colors ${isActive ? 'text-emerald-400' : 'text-zinc-500 hover:text-zinc-300'}`}
+      aria-label={label}
+      className={`flex flex-col items-center justify-center gap-1 transition-colors w-full ${isActive ? 'text-emerald-400' : 'text-zinc-500 hover:text-zinc-300'}`}
     >
       {icon}
-      <span className="text-[10px] font-medium uppercase tracking-wider">{label}</span>
     </button>
   );
 }
