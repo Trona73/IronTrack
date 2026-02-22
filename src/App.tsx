@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User } from 'lucide-react';
+import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User, TrendingUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { WorkoutPlan, WorkoutSession, Exercise, PlannedExercise, CompletedSet, CompletedExercise, UserProfile } from './types';
 import { EXERCISES, MOCK_PLANS } from './data';
 
@@ -219,10 +220,11 @@ function NavItem({ icon, label, isActive, onClick }: { icon: React.ReactNode, la
 }
 
 // --- Dashboard View ---
-function DashboardView({ plans, onStartWorkout, onNewPlan, onEditPlan, onDeletePlan, key }: { plans: WorkoutPlan[], onStartWorkout: (p: WorkoutPlan) => void, onNewPlan: () => void, onEditPlan: (p: WorkoutPlan) => void, onDeletePlan: (id: string) => void, key?: React.Key }) {
+function DashboardView({ plans, onStartWorkout, onNewPlan, onEditPlan, onDeletePlan }: { plans: WorkoutPlan[], onStartWorkout: (p: WorkoutPlan) => void, onNewPlan: () => void, onEditPlan: (p: WorkoutPlan) => void, onDeletePlan: (id: string) => void, key?: React.Key }) {
   const today = new Date().getDay();
   const todaysPlans = plans.filter(p => p.daysOfWeek.includes(today));
   const [time, setTime] = useState(new Date());
+  const [showPlanSelector, setShowPlanSelector] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -241,12 +243,14 @@ function DashboardView({ plans, onStartWorkout, onNewPlan, onEditPlan, onDeleteP
           <h1 className="text-4xl font-bold tracking-tighter">Iron<span className="text-emerald-500">Track</span></h1>
           <p className="text-zinc-400 mt-2 font-mono text-sm">SUA ROTINA DE FORÇA</p>
         </div>
-        <div className="text-right">
-          <div className="text-xl font-bold text-zinc-200 font-mono">
-            {time.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+        <div className="flex flex-col items-end gap-1">
+          <div className="text-2xl font-bold text-zinc-100 tracking-tight uppercase flex items-center gap-2">
+            {time.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}
+            <span className="text-emerald-500">{time.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
           </div>
-          <div className="text-xs text-zinc-500 font-mono uppercase">
-            {time.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })}
+          <div className="text-xs font-mono text-zinc-500 bg-zinc-900/80 px-2 py-1 rounded-md border border-zinc-800 flex items-center gap-1.5">
+            <Clock size={10} />
+            {time.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
           </div>
         </div>
       </header>
@@ -276,10 +280,10 @@ function DashboardView({ plans, onStartWorkout, onNewPlan, onEditPlan, onDeleteP
             <Dumbbell className="mx-auto text-zinc-600 mb-3" size={32} />
             <p className="text-zinc-400 mb-4">Nenhum treino programado para hoje.</p>
             <button 
-              onClick={onNewPlan}
+              onClick={() => setShowPlanSelector(true)}
               className="bg-zinc-800 text-zinc-200 px-4 py-2 rounded-full text-sm font-medium hover:bg-zinc-700 transition-colors"
             >
-              Criar Novo Treino
+              Selecionar Treino
             </button>
           </div>
         )}
@@ -299,11 +303,64 @@ function DashboardView({ plans, onStartWorkout, onNewPlan, onEditPlan, onDeleteP
           ))}
         </div>
       </section>
+
+      {/* Plan Selector Modal */}
+      <AnimatePresence>
+        {showPlanSelector && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            onClick={() => setShowPlanSelector(false)}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-md w-full shadow-xl max-h-[80vh] overflow-y-auto"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold">Selecionar Treino</h3>
+                <button onClick={() => setShowPlanSelector(false)} className="p-2 bg-zinc-800 rounded-full">
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="space-y-3">
+                {todaysPlans.length > 0 ? (
+                  todaysPlans.map(plan => (
+                    <button 
+                      key={plan.id}
+                      onClick={() => {
+                        onStartWorkout(plan);
+                        setShowPlanSelector(false);
+                      }}
+                      className="w-full flex items-center justify-between bg-zinc-950 border border-zinc-800 p-4 rounded-xl hover:border-emerald-500/50 transition-colors text-left group"
+                    >
+                      <div>
+                        <div className="font-semibold group-hover:text-emerald-400 transition-colors">{plan.name}</div>
+                        <div className="text-xs text-zinc-500 font-mono mt-1">{plan.exercises.length} exercícios</div>
+                      </div>
+                      <Play className="text-zinc-500 group-hover:text-emerald-500" size={20} />
+                    </button>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-zinc-500">
+                    Nenhum treino agendado para hoje.
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
 
-function PlanCard({ plan, onStart, onEdit, onDelete, key }: { plan: WorkoutPlan, onStart: () => void, onEdit: () => void, onDelete: () => void, key?: React.Key }) {
+function PlanCard({ plan, onStart, onEdit, onDelete }: { plan: WorkoutPlan, onStart: () => void, onEdit: () => void, onDelete: () => void, key?: React.Key }) {
   const daysMap = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
   
   return (
@@ -350,7 +407,7 @@ function PlanCard({ plan, onStart, onEdit, onDelete, key }: { plan: WorkoutPlan,
 }
 
 // --- Builder View ---
-function BuilderView({ initialPlan, onSave, onCancel, key }: { initialPlan?: WorkoutPlan | null, onSave: (p: WorkoutPlan) => void, onCancel: () => void, key?: React.Key }) {
+function BuilderView({ initialPlan, onSave, onCancel }: { initialPlan?: WorkoutPlan | null, onSave: (p: WorkoutPlan) => void, onCancel: () => void, key?: React.Key }) {
   const [name, setName] = useState(initialPlan?.name || '');
   const [days, setDays] = useState<number[]>(initialPlan?.daysOfWeek || []);
   const [exercises, setExercises] = useState<PlannedExercise[]>(initialPlan?.exercises || []);
@@ -570,7 +627,7 @@ function BuilderView({ initialPlan, onSave, onCancel, key }: { initialPlan?: Wor
 }
 
 // --- Active Workout View ---
-function ActiveWorkoutView({ plan, onFinish, onCancel, key }: { plan: WorkoutPlan, onFinish: (s: WorkoutSession) => void, onCancel: () => void, key?: React.Key }) {
+function ActiveWorkoutView({ plan, onFinish, onCancel }: { plan: WorkoutPlan, onFinish: (s: WorkoutSession) => void, onCancel: () => void, key?: React.Key }) {
   const [startTime] = useState(new Date().toISOString());
   const [currentExIndex, setCurrentExIndex] = useState(0);
   const [completedExercises, setCompletedExercises] = useState<CompletedExercise[]>([]);
@@ -810,7 +867,27 @@ function ActiveWorkoutView({ plan, onFinish, onCancel, key }: { plan: WorkoutPla
 }
 
 // --- History View ---
-function HistoryView({ sessions, plans, key }: { sessions: WorkoutSession[], plans: WorkoutPlan[], key?: React.Key }) {
+function HistoryView({ sessions, plans }: { sessions: WorkoutSession[], plans: WorkoutPlan[], key?: React.Key }) {
+  const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
+
+  // Get all unique exercises performed in history
+  const performedExerciseIds = Array.from(new Set(
+    sessions.flatMap(s => s.exercises.map(e => e.exerciseId))
+  ));
+
+  const chartData = selectedExerciseId ? sessions
+    .filter(s => s.exercises.some(e => e.exerciseId === selectedExerciseId))
+    .map(s => {
+      const ex = s.exercises.find(e => e.exerciseId === selectedExerciseId);
+      const maxWeight = ex ? Math.max(...ex.sets.map(set => set.weight)) : 0;
+      return {
+        date: new Date(s.startTime).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+        weight: maxWeight,
+        fullDate: new Date(s.startTime).toLocaleDateString('pt-BR')
+      };
+    })
+    .reverse() : [];
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -823,6 +900,74 @@ function HistoryView({ sessions, plans, key }: { sessions: WorkoutSession[], pla
         <p className="text-zinc-400">Seus treinos concluídos.</p>
       </header>
 
+      {/* Progress Chart Section */}
+      {performedExerciseIds.length > 0 && (
+        <section className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 mb-6">
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp className="text-emerald-500" size={20} />
+            <h2 className="font-bold text-lg">Progressão de Carga</h2>
+          </div>
+          
+          <div className="mb-4">
+            <select 
+              value={selectedExerciseId || ''} 
+              onChange={(e) => setSelectedExerciseId(e.target.value)}
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
+            >
+              <option value="">Selecione um exercício</option>
+              {performedExerciseIds.map(id => {
+                const exDef = EXERCISES.find(e => e.id === id);
+                return <option key={id} value={id}>{exDef?.name || 'Exercício desconhecido'}</option>
+              })}
+            </select>
+          </div>
+
+          {selectedExerciseId && chartData.length > 0 ? (
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+                  <XAxis 
+                    dataKey="date" 
+                    stroke="#71717a" 
+                    fontSize={10} 
+                    tickLine={false} 
+                    axisLine={false}
+                    tickMargin={10}
+                  />
+                  <YAxis 
+                    stroke="#71717a" 
+                    fontSize={10} 
+                    tickLine={false} 
+                    axisLine={false}
+                    tickFormatter={(value) => `${value}kg`}
+                  />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', borderRadius: '8px' }}
+                    itemStyle={{ color: '#10b981' }}
+                    labelStyle={{ color: '#a1a1aa', marginBottom: '4px' }}
+                    formatter={(value: number) => [`${value} kg`, 'Carga Máxima']}
+                    labelFormatter={(label, payload) => payload[0]?.payload.fullDate}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="weight" 
+                    stroke="#10b981" 
+                    strokeWidth={2} 
+                    dot={{ fill: '#10b981', r: 4 }} 
+                    activeDot={{ r: 6, fill: '#34d399' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          ) : selectedExerciseId ? (
+            <div className="text-center py-8 text-zinc-500 text-sm">
+              Dados insuficientes para exibir o gráfico.
+            </div>
+          ) : null}
+        </section>
+      )}
+
       {sessions.length === 0 ? (
         <div className="text-center p-8 border border-dashed border-zinc-800 rounded-2xl text-zinc-500 mt-8">
           <HistoryIcon className="mx-auto mb-4 opacity-50" size={32} />
@@ -830,6 +975,7 @@ function HistoryView({ sessions, plans, key }: { sessions: WorkoutSession[], pla
         </div>
       ) : (
         <div className="space-y-4">
+          <h2 className="font-bold text-lg px-1">Últimos Treinos</h2>
           {sessions.map(session => {
             const plan = plans.find(p => p.id === session.planId);
             const date = new Date(session.startTime);
@@ -873,7 +1019,7 @@ function HistoryView({ sessions, plans, key }: { sessions: WorkoutSession[], pla
 }
 
 // --- Profile View ---
-function ProfileView({ profile, onSave, key }: { profile: UserProfile, onSave: (p: UserProfile) => void, key?: React.Key }) {
+function ProfileView({ profile, onSave }: { profile: UserProfile, onSave: (p: UserProfile) => void, key?: React.Key }) {
   const [localProfile, setLocalProfile] = useState(profile);
   const [isEditing, setIsEditing] = useState(false);
 
