@@ -8,7 +8,7 @@ import { EXERCISES, MOCK_PLANS } from './data';
 const DEFAULT_MUSCLE_GROUPS = ['Peito', 'Costas', 'Pernas', 'Ombros', 'Braços', 'Core', 'Cardio'];
 const DEFAULT_EQUIPMENT = ['Halteres', 'Barra', 'Máquina', 'Peso Corporal', 'Cabos', 'Kettlebell'];
 
-type View = 'dashboard' | 'builder' | 'active' | 'history' | 'profile';
+type View = 'dashboard' | 'builder' | 'active' | 'history' | 'profile' | 'exercises';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<View>('dashboard');
@@ -130,10 +130,6 @@ export default function App() {
               key="builder" 
               initialPlan={planToEdit}
               availableExercises={exercises}
-              availableMuscleGroups={muscleGroups}
-              availableEquipment={equipmentList}
-              onUpdateMuscleGroups={setMuscleGroups}
-              onUpdateEquipment={setEquipmentList}
               onAddExercise={addExercise}
               onSave={savePlan}
               onCancel={() => {
@@ -160,6 +156,17 @@ export default function App() {
               sessions={sessions} 
               plans={plans}
               availableExercises={exercises}
+            />
+          )}
+          {currentView === 'exercises' && (
+            <ExercisesView 
+              key="exercises"
+              exercises={exercises}
+              muscleGroups={muscleGroups}
+              equipmentList={equipmentList}
+              onAddExercise={addExercise}
+              onUpdateMuscleGroups={setMuscleGroups}
+              onUpdateEquipment={setEquipmentList}
             />
           )}
           {currentView === 'profile' && (
@@ -225,6 +232,12 @@ export default function App() {
               label="Criar" 
               isActive={currentView === 'builder'} 
               onClick={() => setCurrentView('builder')} 
+            />
+            <NavItem 
+              icon={<Dumbbell size={24} />} 
+              label="Exercícios" 
+              isActive={currentView === 'exercises'} 
+              onClick={() => setCurrentView('exercises')} 
             />
             <NavItem 
               icon={<HistoryIcon size={24} />} 
@@ -448,20 +461,12 @@ function PlanCard({ plan, onStart, onEdit, onDelete }: { plan: WorkoutPlan, onSt
 function BuilderView({ 
   initialPlan, 
   availableExercises, 
-  availableMuscleGroups, 
-  availableEquipment, 
-  onUpdateMuscleGroups, 
-  onUpdateEquipment, 
   onAddExercise, 
   onSave, 
   onCancel 
 }: { 
   initialPlan?: WorkoutPlan | null, 
   availableExercises: Exercise[], 
-  availableMuscleGroups: string[], 
-  availableEquipment: string[], 
-  onUpdateMuscleGroups: (items: string[]) => void, 
-  onUpdateEquipment: (items: string[]) => void, 
   onAddExercise: (e: Exercise) => void, 
   onSave: (p: WorkoutPlan) => void, 
   onCancel: () => void, 
@@ -471,40 +476,22 @@ function BuilderView({
   const [days, setDays] = useState<number[]>(initialPlan?.daysOfWeek || []);
   const [exercises, setExercises] = useState<PlannedExercise[]>(initialPlan?.exercises || []);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
-  const [showCreateExercise, setShowCreateExercise] = useState(false);
-  const [managingList, setManagingList] = useState<'muscle' | 'equipment' | null>(null);
   
   // Filter State
   const [filterMuscle, setFilterMuscle] = useState<string>('Todos');
   const [filterEquipment, setFilterEquipment] = useState<string>('Todos');
 
-  // New Exercise State
-  const [newExerciseName, setNewExerciseName] = useState('');
-  const [newExerciseMuscle, setNewExerciseMuscle] = useState<string>(availableMuscleGroups[0] || '');
-  const [newExerciseEquipment, setNewExerciseEquipment] = useState<string>(availableEquipment[0] || '');
+  // Get unique muscle groups and equipment from available exercises for filtering
+  const availableMuscleGroups = Array.from(new Set(availableExercises.map(e => e.muscleGroup))).sort();
+  const availableEquipment = Array.from(new Set(availableExercises.map(e => e.equipment))).sort();
 
   const daysMap = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
-
-  const handleCreateExercise = () => {
-    if (!newExerciseName.trim()) return;
-    
-    const newExercise: Exercise = {
-      id: `custom_${Date.now()}`,
-      name: newExerciseName,
-      muscleGroup: newExerciseMuscle,
-      equipment: newExerciseEquipment
-    };
-    
-    onAddExercise(newExercise);
-    setNewExerciseName('');
-    setShowCreateExercise(false);
-  };
 
   const toggleDay = (d: number) => {
     setDays(prev => prev.includes(d) ? prev.filter(day => day !== d) : [...prev, d].sort());
   };
 
-  const addExercise = (exerciseId: string) => {
+  const addExerciseToPlan = (exerciseId: string) => {
     setExercises(prev => [
       ...prev, 
       {
@@ -555,82 +542,6 @@ function BuilderView({
   };
 
   if (showExercisePicker) {
-    if (showCreateExercise) {
-      return (
-        <div className="p-6 pt-12">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold">Novo Exercício</h2>
-            <button onClick={() => setShowCreateExercise(false)} className="p-2 bg-zinc-800 rounded-full">
-              <X size={20} />
-            </button>
-          </div>
-          
-          <div className="space-y-6">
-            <div>
-              <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Nome do Exercício</label>
-              <input 
-                type="text" 
-                value={newExerciseName}
-                onChange={e => setNewExerciseName(e.target.value)}
-                placeholder="Ex: Agachamento Búlgaro"
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-lg focus:outline-none focus:border-emerald-500 transition-colors"
-              />
-            </div>
-
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="block text-xs font-mono text-zinc-500 uppercase tracking-wider">Grupo Muscular</label>
-                <button onClick={() => setManagingList('muscle')} className="text-xs text-emerald-500 font-medium hover:text-emerald-400">Gerenciar</button>
-              </div>
-              <select 
-                value={newExerciseMuscle}
-                onChange={e => setNewExerciseMuscle(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-lg focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
-              >
-                {availableMuscleGroups.map(m => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="block text-xs font-mono text-zinc-500 uppercase tracking-wider">Equipamento</label>
-                <button onClick={() => setManagingList('equipment')} className="text-xs text-emerald-500 font-medium hover:text-emerald-400">Gerenciar</button>
-              </div>
-              <select 
-                value={newExerciseEquipment}
-                onChange={e => setNewExerciseEquipment(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-lg focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
-              >
-                {availableEquipment.map(e => (
-                  <option key={e} value={e}>{e}</option>
-                ))}
-              </select>
-            </div>
-
-            <button 
-              onClick={handleCreateExercise}
-              disabled={!newExerciseName.trim()}
-              className="w-full bg-emerald-500 text-zinc-950 py-4 rounded-xl font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              <Save size={20} />
-              Salvar Exercício
-            </button>
-          </div>
-
-          {managingList && (
-            <ListManager 
-              title={managingList === 'muscle' ? 'Grupos Musculares' : 'Equipamentos'}
-              items={managingList === 'muscle' ? availableMuscleGroups : availableEquipment}
-              onUpdate={managingList === 'muscle' ? onUpdateMuscleGroups : onUpdateEquipment}
-              onClose={() => setManagingList(null)}
-            />
-          )}
-        </div>
-      );
-    }
-
     return (
       <div className="p-6 pt-12">
         <div className="flex items-center justify-between mb-6">
@@ -640,14 +551,6 @@ function BuilderView({
           </button>
         </div>
         
-        <button 
-          onClick={() => setShowCreateExercise(true)}
-          className="w-full mb-4 bg-zinc-800 border border-dashed border-zinc-700 p-4 rounded-xl text-zinc-400 hover:text-emerald-400 hover:border-emerald-500/50 transition-colors flex items-center justify-center gap-2"
-        >
-          <PlusCircle size={20} />
-          Criar Novo Exercício
-        </button>
-
         {/* Filters */}
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div>
@@ -678,7 +581,7 @@ function BuilderView({
           </div>
         </div>
 
-        <div className="space-y-3 max-h-[50vh] overflow-y-auto">
+        <div className="space-y-3 max-h-[60vh] overflow-y-auto">
           {availableExercises
             .filter(ex => (filterMuscle === 'Todos' || ex.muscleGroup === filterMuscle) && 
                           (filterEquipment === 'Todos' || ex.equipment === filterEquipment))
@@ -686,7 +589,7 @@ function BuilderView({
             <button 
               key={ex.id}
               onClick={() => {
-                addExercise(ex.id);
+                addExerciseToPlan(ex.id);
                 // Reset filters when adding
                 setFilterMuscle('Todos');
                 setFilterEquipment('Todos');
@@ -708,18 +611,6 @@ function BuilderView({
           )}
         </div>
       </div>
-    );
-  }
-
-  // Render ListManager outside of the conditional blocks to ensure it's visible
-  if (managingList) {
-    return (
-      <ListManager 
-        title={managingList === 'muscle' ? 'Grupos Musculares' : 'Equipamentos'}
-        items={managingList === 'muscle' ? availableMuscleGroups : availableEquipment}
-        onUpdate={managingList === 'muscle' ? onUpdateMuscleGroups : onUpdateEquipment}
-        onClose={() => setManagingList(null)}
-      />
     );
   }
 
@@ -851,6 +742,8 @@ function BuilderView({
     </motion.div>
   );
 }
+
+
 
 function ListManager({ title, items, onUpdate, onClose }: { title: string, items: string[], onUpdate: (items: string[]) => void, onClose: () => void }) {
   const [newItem, setNewItem] = useState('');
@@ -1318,6 +1211,200 @@ function HistoryView({ sessions, plans, availableExercises }: { sessions: Workou
             );
           })}
         </div>
+      )}
+    </motion.div>
+  );
+}
+
+// --- Exercises View ---
+function ExercisesView({ 
+  exercises, 
+  muscleGroups, 
+  equipmentList, 
+  onAddExercise, 
+  onUpdateMuscleGroups, 
+  onUpdateEquipment 
+}: { 
+  exercises: Exercise[], 
+  muscleGroups: string[], 
+  equipmentList: string[], 
+  onAddExercise: (e: Exercise) => void, 
+  onUpdateMuscleGroups: (items: string[]) => void, 
+  onUpdateEquipment: (items: string[]) => void, 
+  key?: React.Key 
+}) {
+  const [showCreate, setShowCreate] = useState(false);
+  const [filterMuscle, setFilterMuscle] = useState<string>('Todos');
+  const [filterEquipment, setFilterEquipment] = useState<string>('Todos');
+  const [managingList, setManagingList] = useState<'muscle' | 'equipment' | null>(null);
+
+  // New Exercise State
+  const [newExerciseName, setNewExerciseName] = useState('');
+  const [newExerciseMuscle, setNewExerciseMuscle] = useState<string>(muscleGroups[0] || '');
+  const [newExerciseEquipment, setNewExerciseEquipment] = useState<string>(equipmentList[0] || '');
+
+  const handleCreateExercise = () => {
+    if (!newExerciseName.trim()) return;
+    
+    const newExercise: Exercise = {
+      id: `custom_${Date.now()}`,
+      name: newExerciseName,
+      muscleGroup: newExerciseMuscle,
+      equipment: newExerciseEquipment
+    };
+    
+    onAddExercise(newExercise);
+    setNewExerciseName('');
+    setShowCreate(false);
+  };
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="p-6 pt-12 space-y-6"
+    >
+      <header className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight mb-2">Exercícios</h1>
+          <p className="text-zinc-400">Gerencie sua biblioteca.</p>
+        </div>
+        {!showCreate && (
+          <button 
+            onClick={() => setShowCreate(true)}
+            className="p-3 bg-emerald-500 rounded-full text-zinc-950 hover:bg-emerald-400 transition-colors"
+          >
+            <PlusCircle size={24} />
+          </button>
+        )}
+      </header>
+
+      {showCreate ? (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-bold">Novo Exercício</h2>
+            <button onClick={() => setShowCreate(false)} className="p-2 bg-zinc-800 rounded-full">
+              <X size={20} />
+            </button>
+          </div>
+
+          <div>
+            <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Nome</label>
+            <input 
+              type="text" 
+              value={newExerciseName}
+              onChange={e => setNewExerciseName(e.target.value)}
+              placeholder="Ex: Agachamento Búlgaro"
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-lg focus:outline-none focus:border-emerald-500 transition-colors"
+            />
+          </div>
+
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-xs font-mono text-zinc-500 uppercase tracking-wider">Grupo Muscular</label>
+              <button onClick={() => setManagingList('muscle')} className="text-xs text-emerald-500 font-medium hover:text-emerald-400">Gerenciar</button>
+            </div>
+            <select 
+              value={newExerciseMuscle}
+              onChange={e => setNewExerciseMuscle(e.target.value)}
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-lg focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
+            >
+              {muscleGroups.map(m => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-xs font-mono text-zinc-500 uppercase tracking-wider">Equipamento</label>
+              <button onClick={() => setManagingList('equipment')} className="text-xs text-emerald-500 font-medium hover:text-emerald-400">Gerenciar</button>
+            </div>
+            <select 
+              value={newExerciseEquipment}
+              onChange={e => setNewExerciseEquipment(e.target.value)}
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-lg focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
+            >
+              {equipmentList.map(e => (
+                <option key={e} value={e}>{e}</option>
+              ))}
+            </select>
+          </div>
+
+          <button 
+            onClick={handleCreateExercise}
+            disabled={!newExerciseName.trim()}
+            className="w-full bg-emerald-500 text-zinc-950 py-4 rounded-xl font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            <Save size={20} />
+            Salvar
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* Filters */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-mono text-zinc-500 mb-1 uppercase tracking-wider">Músculo</label>
+              <select 
+                value={filterMuscle}
+                onChange={e => setFilterMuscle(e.target.value)}
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
+              >
+                <option value="Todos">Todos</option>
+                {muscleGroups.map(m => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-mono text-zinc-500 mb-1 uppercase tracking-wider">Equipamento</label>
+              <select 
+                value={filterEquipment}
+                onChange={e => setFilterEquipment(e.target.value)}
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
+              >
+                <option value="Todos">Todos</option>
+                {equipmentList.map(e => (
+                  <option key={e} value={e}>{e}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {exercises
+              .filter(ex => (filterMuscle === 'Todos' || ex.muscleGroup === filterMuscle) && 
+                            (filterEquipment === 'Todos' || ex.equipment === filterEquipment))
+              .map(ex => (
+              <div 
+                key={ex.id}
+                className="flex items-center justify-between bg-zinc-900 border border-zinc-800 p-4 rounded-xl"
+              >
+                <div>
+                  <div className="font-semibold">{ex.name}</div>
+                  <div className="text-xs text-zinc-500 font-mono mt-1">{ex.muscleGroup} • {ex.equipment}</div>
+                </div>
+              </div>
+            ))}
+            {exercises.filter(ex => (filterMuscle === 'Todos' || ex.muscleGroup === filterMuscle) && 
+                            (filterEquipment === 'Todos' || ex.equipment === filterEquipment)).length === 0 && (
+              <div className="text-center py-8 text-zinc-500">
+                Nenhum exercício encontrado.
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {managingList && (
+        <ListManager 
+          title={managingList === 'muscle' ? 'Grupos Musculares' : 'Equipamentos'}
+          items={managingList === 'muscle' ? muscleGroups : equipmentList}
+          onUpdate={managingList === 'muscle' ? onUpdateMuscleGroups : onUpdateEquipment}
+          onClose={() => setManagingList(null)}
+        />
       )}
     </motion.div>
   );
