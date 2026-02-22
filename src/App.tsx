@@ -1255,6 +1255,7 @@ function ExercisesView({
   const [filterMuscle, setFilterMuscle] = useState<string>('Todos');
   const [filterEquipment, setFilterEquipment] = useState<string>('Todos');
   const [managingList, setManagingList] = useState<'muscle' | 'equipment' | null>(null);
+  const [exerciseToDelete, setExerciseToDelete] = useState<string | null>(null);
 
   // New Exercise State
   const [newExerciseName, setNewExerciseName] = useState('');
@@ -1419,6 +1420,7 @@ function ExercisesView({
             {exercises
               .filter(ex => (filterMuscle === 'Todos' || ex.muscleGroup === filterMuscle) && 
                             (filterEquipment === 'Todos' || ex.equipment === filterEquipment))
+              .sort((a, b) => a.name.localeCompare(b.name))
               .map(ex => (
             <div 
                 key={ex.id}
@@ -1436,7 +1438,7 @@ function ExercisesView({
                     <Pencil size={18} />
                   </button>
                   <button 
-                    onClick={() => onDeleteExercise(ex.id)}
+                    onClick={() => setExerciseToDelete(ex.id)}
                     className="p-2 text-zinc-500 hover:text-red-400 hover:bg-zinc-800 rounded-full transition-colors"
                   >
                     <Trash2 size={18} />
@@ -1462,6 +1464,49 @@ function ExercisesView({
           onClose={() => setManagingList(null)}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {exerciseToDelete && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={() => setExerciseToDelete(null)}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-sm w-full shadow-xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className="text-xl font-bold mb-2">Excluir Exercício?</h3>
+              <p className="text-zinc-400 mb-6">Esta ação não pode ser desfeita.</p>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setExerciseToDelete(null)}
+                  className="flex-1 py-3 rounded-xl font-bold bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={() => {
+                    if (exerciseToDelete) {
+                      onDeleteExercise(exerciseToDelete);
+                      setExerciseToDelete(null);
+                    }
+                  }}
+                  className="flex-1 py-3 rounded-xl font-bold bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
+                >
+                  Excluir
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
