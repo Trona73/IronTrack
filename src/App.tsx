@@ -33,6 +33,7 @@ export default function App() {
     const savedPlans = localStorage.getItem('iron_plans');
     const savedSessions = localStorage.getItem('iron_sessions');
     const savedProfile = localStorage.getItem('iron_profile');
+    const savedExercisesV2 = localStorage.getItem('iron_exercises_v2');
     const savedExercises = localStorage.getItem('iron_exercises');
     const savedMuscleGroups = localStorage.getItem('iron_muscle_groups');
     const savedEquipment = localStorage.getItem('iron_equipment');
@@ -40,13 +41,17 @@ export default function App() {
     if (savedPlans) setPlans(JSON.parse(savedPlans));
     if (savedSessions) setSessions(JSON.parse(savedSessions));
     if (savedProfile) setUserProfile(JSON.parse(savedProfile));
-    if (savedExercises) {
+    
+    if (savedExercisesV2) {
+      setExercises(JSON.parse(savedExercisesV2));
+    } else if (savedExercises) {
       const customExercises = JSON.parse(savedExercises);
       // Merge custom exercises with default ones, avoiding duplicates if any
       const defaultIds = new Set(EXERCISES.map(e => e.id));
       const newCustom = customExercises.filter((e: Exercise) => !defaultIds.has(e.id));
       setExercises([...EXERCISES, ...newCustom]);
     }
+    
     if (savedMuscleGroups) setMuscleGroups(JSON.parse(savedMuscleGroups));
     if (savedEquipment) setEquipmentList(JSON.parse(savedEquipment));
   }, []);
@@ -59,14 +64,20 @@ export default function App() {
     localStorage.setItem('iron_muscle_groups', JSON.stringify(muscleGroups));
     localStorage.setItem('iron_equipment', JSON.stringify(equipmentList));
     
-    // Only save custom exercises
-    const defaultIds = new Set(EXERCISES.map(e => e.id));
-    const customExercises = exercises.filter(e => !defaultIds.has(e.id));
-    localStorage.setItem('iron_exercises', JSON.stringify(customExercises));
+    // Save all exercises to v2
+    localStorage.setItem('iron_exercises_v2', JSON.stringify(exercises));
   }, [plans, sessions, userProfile, exercises, muscleGroups, equipmentList]);
 
   const addExercise = (exercise: Exercise) => {
     setExercises(prev => [...prev, exercise]);
+  };
+
+  const editExercise = (exercise: Exercise) => {
+    setExercises(prev => prev.map(e => e.id === exercise.id ? exercise : e));
+  };
+
+  const deleteExercise = (id: string) => {
+    setExercises(prev => prev.filter(e => e.id !== id));
   };
 
   const savePlan = (plan: WorkoutPlan) => {
@@ -165,6 +176,8 @@ export default function App() {
               muscleGroups={muscleGroups}
               equipmentList={equipmentList}
               onAddExercise={addExercise}
+              onEditExercise={editExercise}
+              onDeleteExercise={deleteExercise}
               onUpdateMuscleGroups={setMuscleGroups}
               onUpdateEquipment={setEquipmentList}
             />
@@ -1222,6 +1235,8 @@ function ExercisesView({
   muscleGroups, 
   equipmentList, 
   onAddExercise, 
+  onEditExercise,
+  onDeleteExercise,
   onUpdateMuscleGroups, 
   onUpdateEquipment 
 }: { 
@@ -1229,11 +1244,14 @@ function ExercisesView({
   muscleGroups: string[], 
   equipmentList: string[], 
   onAddExercise: (e: Exercise) => void, 
+  onEditExercise: (e: Exercise) => void,
+  onDeleteExercise: (id: string) => void,
   onUpdateMuscleGroups: (items: string[]) => void, 
   onUpdateEquipment: (items: string[]) => void, 
   key?: React.Key 
 }) {
   const [showCreate, setShowCreate] = useState(false);
+  const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
   const [filterMuscle, setFilterMuscle] = useState<string>('Todos');
   const [filterEquipment, setFilterEquipment] = useState<string>('Todos');
   const [managingList, setManagingList] = useState<'muscle' | 'equipment' | null>(null);
@@ -1246,14 +1264,38 @@ function ExercisesView({
   const handleCreateExercise = () => {
     if (!newExerciseName.trim()) return;
     
-    const newExercise: Exercise = {
-      id: `custom_${Date.now()}`,
-      name: newExerciseName,
-      muscleGroup: newExerciseMuscle,
-      equipment: newExerciseEquipment
-    };
+    if (editingExercise) {
+      onEditExercise({
+        ...editingExercise,
+        name: newExerciseName,
+        muscleGroup: newExerciseMuscle,
+        equipment: newExerciseEquipment
+      });
+      setEditingExercise(null);
+    } else {
+      const newExercise: Exercise = {
+        id: `custom_${Date.now()}`,
+        name: newExerciseName,
+        muscleGroup: newExerciseMuscle,
+        equipment: newExerciseEquipment
+      };
+      onAddExercise(newExercise);
+    }
     
-    onAddExercise(newExercise);
+    setNewExerciseName('');
+    setShowCreate(false);
+  };
+
+  const startEditing = (ex: Exercise) => {
+    setEditingExercise(ex);
+    setNewExerciseName(ex.name);
+    setNewExerciseMuscle(ex.muscleGroup);
+    setNewExerciseEquipment(ex.equipment);
+    setShowCreate(true);
+  };
+
+  const cancelEditing = () => {
+    setEditingExercise(null);
     setNewExerciseName('');
     setShowCreate(false);
   };
@@ -1283,8 +1325,8 @@ function ExercisesView({
       {showCreate ? (
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold">Novo Exercício</h2>
-            <button onClick={() => setShowCreate(false)} className="p-2 bg-zinc-800 rounded-full">
+            <h2 className="text-xl font-bold">{editingExercise ? 'Editar Exercício' : 'Novo Exercício'}</h2>
+            <button onClick={cancelEditing} className="p-2 bg-zinc-800 rounded-full">
               <X size={20} />
             </button>
           </div>
@@ -1378,13 +1420,27 @@ function ExercisesView({
               .filter(ex => (filterMuscle === 'Todos' || ex.muscleGroup === filterMuscle) && 
                             (filterEquipment === 'Todos' || ex.equipment === filterEquipment))
               .map(ex => (
-              <div 
+            <div 
                 key={ex.id}
-                className="flex items-center justify-between bg-zinc-900 border border-zinc-800 p-4 rounded-xl"
+                className="flex items-center justify-between bg-zinc-900 border border-zinc-800 p-4 rounded-xl group"
               >
                 <div>
                   <div className="font-semibold">{ex.name}</div>
                   <div className="text-xs text-zinc-500 font-mono mt-1">{ex.muscleGroup} • {ex.equipment}</div>
+                </div>
+                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button 
+                    onClick={() => startEditing(ex)}
+                    className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-full transition-colors"
+                  >
+                    <Pencil size={18} />
+                  </button>
+                  <button 
+                    onClick={() => onDeleteExercise(ex.id)}
+                    className="p-2 text-zinc-500 hover:text-red-400 hover:bg-zinc-800 rounded-full transition-colors"
+                  >
+                    <Trash2 size={18} />
+                  </button>
                 </div>
               </div>
             ))}
