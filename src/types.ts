@@ -8,6 +8,8 @@ export interface Exercise {
   equipment: Equipment;
   muscleGroup: MuscleGroup;
   imageUrl?: string;
+  description?: string;
+  videoUrl?: string;
 }
 
 export interface PlannedSet {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User, TrendingUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { WorkoutPlan, WorkoutSession, Exercise, PlannedExercise, CompletedSet, CompletedExercise, UserProfile } from './types';
+import { WorkoutPlan, WorkoutSession, Exercise, PlannedExercise, CompletedSet, CompletedExercise, UserProfile, Equipment, MuscleGroup } from './types';
 import { EXERCISES, MOCK_PLANS } from './data';
 
 type View = 'dashboard' | 'builder' | 'active' | 'history' | 'profile';
@@ -11,6 +11,7 @@ export default function App() {
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [plans, setPlans] = useState<WorkoutPlan[]>(MOCK_PLANS);
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
+  const [exercises, setExercises] = useState<Exercise[]>(EXERCISES);
   const [userProfile, setUserProfile] = useState<UserProfile>({
     name: '',
     weight: 0,
@@ -27,9 +28,17 @@ export default function App() {
     const savedPlans = localStorage.getItem('iron_plans');
     const savedSessions = localStorage.getItem('iron_sessions');
     const savedProfile = localStorage.getItem('iron_profile');
+    const savedExercises = localStorage.getItem('iron_exercises');
     if (savedPlans) setPlans(JSON.parse(savedPlans));
     if (savedSessions) setSessions(JSON.parse(savedSessions));
     if (savedProfile) setUserProfile(JSON.parse(savedProfile));
+    if (savedExercises) {
+      const customExercises = JSON.parse(savedExercises);
+      // Merge custom exercises with default ones, avoiding duplicates if any
+      const defaultIds = new Set(EXERCISES.map(e => e.id));
+      const newCustom = customExercises.filter((e: Exercise) => !defaultIds.has(e.id));
+      setExercises([...EXERCISES, ...newCustom]);
+    }
   }, []);
 
   // Save to local storage
@@ -37,7 +46,16 @@ export default function App() {
     localStorage.setItem('iron_plans', JSON.stringify(plans));
     localStorage.setItem('iron_sessions', JSON.stringify(sessions));
     localStorage.setItem('iron_profile', JSON.stringify(userProfile));
-  }, [plans, sessions, userProfile]);
+    
+    // Only save custom exercises
+    const defaultIds = new Set(EXERCISES.map(e => e.id));
+    const customExercises = exercises.filter(e => !defaultIds.has(e.id));
+    localStorage.setItem('iron_exercises', JSON.stringify(customExercises));
+  }, [plans, sessions, userProfile, exercises]);
+
+  const addExercise = (exercise: Exercise) => {
+    setExercises(prev => [...prev, exercise]);
+  };
 
   const savePlan = (plan: WorkoutPlan) => {
     setPlans(prev => {
@@ -99,6 +117,8 @@ export default function App() {
             <BuilderView 
               key="builder" 
               initialPlan={planToEdit}
+              availableExercises={exercises}
+              onAddExercise={addExercise}
               onSave={savePlan}
               onCancel={() => {
                 setPlanToEdit(null);
@@ -110,6 +130,7 @@ export default function App() {
             <ActiveWorkoutView 
               key="active" 
               plan={activePlan} 
+              availableExercises={exercises}
               onFinish={finishWorkout}
               onCancel={() => {
                 setActivePlan(null);
@@ -122,6 +143,7 @@ export default function App() {
               key="history" 
               sessions={sessions} 
               plans={plans}
+              availableExercises={exercises}
             />
           )}
           {currentView === 'profile' && (
@@ -407,13 +429,34 @@ function PlanCard({ plan, onStart, onEdit, onDelete }: { plan: WorkoutPlan, onSt
 }
 
 // --- Builder View ---
-function BuilderView({ initialPlan, onSave, onCancel }: { initialPlan?: WorkoutPlan | null, onSave: (p: WorkoutPlan) => void, onCancel: () => void, key?: React.Key }) {
+function BuilderView({ initialPlan, availableExercises, onAddExercise, onSave, onCancel }: { initialPlan?: WorkoutPlan | null, availableExercises: Exercise[], onAddExercise: (e: Exercise) => void, onSave: (p: WorkoutPlan) => void, onCancel: () => void, key?: React.Key }) {
   const [name, setName] = useState(initialPlan?.name || '');
   const [days, setDays] = useState<number[]>(initialPlan?.daysOfWeek || []);
   const [exercises, setExercises] = useState<PlannedExercise[]>(initialPlan?.exercises || []);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
+  const [showCreateExercise, setShowCreateExercise] = useState(false);
+  
+  // New Exercise State
+  const [newExerciseName, setNewExerciseName] = useState('');
+  const [newExerciseMuscle, setNewExerciseMuscle] = useState<MuscleGroup>('Peito');
+  const [newExerciseEquipment, setNewExerciseEquipment] = useState<Equipment>('Barra');
 
   const daysMap = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+
+  const handleCreateExercise = () => {
+    if (!newExerciseName.trim()) return;
+    
+    const newExercise: Exercise = {
+      id: `custom_${Date.now()}`,
+      name: newExerciseName,
+      muscleGroup: newExerciseMuscle,
+      equipment: newExerciseEquipment
+    };
+    
+    onAddExercise(newExercise);
+    setNewExerciseName('');
+    setShowCreateExercise(false);
+  };
 
   const toggleDay = (d: number) => {
     setDays(prev => prev.includes(d) ? prev.filter(day => day !== d) : [...prev, d].sort());
@@ -470,6 +513,74 @@ function BuilderView({ initialPlan, onSave, onCancel }: { initialPlan?: WorkoutP
   };
 
   if (showExercisePicker) {
+    if (showCreateExercise) {
+      return (
+        <div className="p-6 pt-12">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold">Novo Exercício</h2>
+            <button onClick={() => setShowCreateExercise(false)} className="p-2 bg-zinc-800 rounded-full">
+              <X size={20} />
+            </button>
+          </div>
+          
+          <div className="space-y-6">
+            <div>
+              <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Nome do Exercício</label>
+              <input 
+                type="text" 
+                value={newExerciseName}
+                onChange={e => setNewExerciseName(e.target.value)}
+                placeholder="Ex: Agachamento Búlgaro"
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-lg focus:outline-none focus:border-emerald-500 transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Grupo Muscular</label>
+              <select 
+                value={newExerciseMuscle}
+                onChange={e => setNewExerciseMuscle(e.target.value as MuscleGroup)}
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-lg focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
+              >
+                <option value="Peito">Peito</option>
+                <option value="Costas">Costas</option>
+                <option value="Pernas">Pernas</option>
+                <option value="Ombros">Ombros</option>
+                <option value="Braços">Braços</option>
+                <option value="Core">Core</option>
+                <option value="Cardio">Cardio</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Equipamento</label>
+              <select 
+                value={newExerciseEquipment}
+                onChange={e => setNewExerciseEquipment(e.target.value as Equipment)}
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-lg focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
+              >
+                <option value="Barra">Barra</option>
+                <option value="Halteres">Halteres</option>
+                <option value="Máquina">Máquina</option>
+                <option value="Cabos">Cabos</option>
+                <option value="Peso Corporal">Peso Corporal</option>
+                <option value="Kettlebell">Kettlebell</option>
+              </select>
+            </div>
+
+            <button 
+              onClick={handleCreateExercise}
+              disabled={!newExerciseName.trim()}
+              className="w-full bg-emerald-500 text-zinc-950 py-4 rounded-xl font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <Save size={20} />
+              Salvar Exercício
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="p-6 pt-12">
         <div className="flex items-center justify-between mb-6">
@@ -478,8 +589,17 @@ function BuilderView({ initialPlan, onSave, onCancel }: { initialPlan?: WorkoutP
             <X size={20} />
           </button>
         </div>
-        <div className="space-y-3">
-          {EXERCISES.map(ex => (
+        
+        <button 
+          onClick={() => setShowCreateExercise(true)}
+          className="w-full mb-4 bg-zinc-800 border border-dashed border-zinc-700 p-4 rounded-xl text-zinc-400 hover:text-emerald-400 hover:border-emerald-500/50 transition-colors flex items-center justify-center gap-2"
+        >
+          <PlusCircle size={20} />
+          Criar Novo Exercício
+        </button>
+
+        <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+          {availableExercises.map(ex => (
             <button 
               key={ex.id}
               onClick={() => addExercise(ex.id)}
@@ -551,7 +671,7 @@ function BuilderView({ initialPlan, onSave, onCancel }: { initialPlan?: WorkoutP
 
           <div className="space-y-4">
             {exercises.map((ex, index) => {
-              const exerciseDef = EXERCISES.find(e => e.id === ex.exerciseId);
+              const exerciseDef = availableExercises.find(e => e.id === ex.exerciseId);
               return (
                 <div key={ex.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
                   <div className="flex justify-between items-center mb-4">
@@ -559,7 +679,7 @@ function BuilderView({ initialPlan, onSave, onCancel }: { initialPlan?: WorkoutP
                       <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center font-mono text-xs text-zinc-400">
                         {index + 1}
                       </div>
-                      <span className="font-semibold">{exerciseDef?.name}</span>
+                      <span className="font-semibold">{exerciseDef?.name || 'Exercício não encontrado'}</span>
                     </div>
                     <button onClick={() => removeExercise(ex.id)} className="text-red-400 p-2">
                       <Trash2 size={16} />
@@ -627,14 +747,14 @@ function BuilderView({ initialPlan, onSave, onCancel }: { initialPlan?: WorkoutP
 }
 
 // --- Active Workout View ---
-function ActiveWorkoutView({ plan, onFinish, onCancel }: { plan: WorkoutPlan, onFinish: (s: WorkoutSession) => void, onCancel: () => void, key?: React.Key }) {
+function ActiveWorkoutView({ plan, availableExercises, onFinish, onCancel }: { plan: WorkoutPlan, availableExercises: Exercise[], onFinish: (s: WorkoutSession) => void, onCancel: () => void, key?: React.Key }) {
   const [startTime] = useState(new Date().toISOString());
   const [currentExIndex, setCurrentExIndex] = useState(0);
   const [completedExercises, setCompletedExercises] = useState<CompletedExercise[]>([]);
   
   // State for current exercise being performed
   const currentPlannedEx = plan.exercises[currentExIndex];
-  const exerciseDef = EXERCISES.find(e => e.id === currentPlannedEx?.exerciseId);
+  const exerciseDef = availableExercises.find(e => e.id === currentPlannedEx?.exerciseId);
   
   const [currentSets, setCurrentSets] = useState<CompletedSet[]>([]);
   const [currentReps, setCurrentReps] = useState(currentPlannedEx?.sets[0]?.reps || 10);
@@ -867,7 +987,7 @@ function ActiveWorkoutView({ plan, onFinish, onCancel }: { plan: WorkoutPlan, on
 }
 
 // --- History View ---
-function HistoryView({ sessions, plans }: { sessions: WorkoutSession[], plans: WorkoutPlan[], key?: React.Key }) {
+function HistoryView({ sessions, plans, availableExercises }: { sessions: WorkoutSession[], plans: WorkoutPlan[], availableExercises: Exercise[], key?: React.Key }) {
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
 
   // Get all unique exercises performed in history
@@ -916,7 +1036,7 @@ function HistoryView({ sessions, plans }: { sessions: WorkoutSession[], plans: W
             >
               <option value="">Selecione um exercício</option>
               {performedExerciseIds.map(id => {
-                const exDef = EXERCISES.find(e => e.id === id);
+                const exDef = availableExercises.find(e => e.id === id);
                 return <option key={id} value={id}>{exDef?.name || 'Exercício desconhecido'}</option>
               })}
             </select>
