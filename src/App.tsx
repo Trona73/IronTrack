@@ -5,6 +5,9 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { WorkoutPlan, WorkoutSession, Exercise, PlannedExercise, CompletedSet, CompletedExercise, UserProfile, Equipment, MuscleGroup } from './types';
 import { EXERCISES, MOCK_PLANS } from './data';
 
+const DEFAULT_MUSCLE_GROUPS = ['Peito', 'Costas', 'Pernas', 'Ombros', 'Braços', 'Core', 'Cardio'];
+const DEFAULT_EQUIPMENT = ['Halteres', 'Barra', 'Máquina', 'Peso Corporal', 'Cabos', 'Kettlebell'];
+
 type View = 'dashboard' | 'builder' | 'active' | 'history' | 'profile';
 
 export default function App() {
@@ -12,6 +15,8 @@ export default function App() {
   const [plans, setPlans] = useState<WorkoutPlan[]>(MOCK_PLANS);
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   const [exercises, setExercises] = useState<Exercise[]>(EXERCISES);
+  const [muscleGroups, setMuscleGroups] = useState<string[]>(DEFAULT_MUSCLE_GROUPS);
+  const [equipmentList, setEquipmentList] = useState<string[]>(DEFAULT_EQUIPMENT);
   const [userProfile, setUserProfile] = useState<UserProfile>({
     name: '',
     weight: 0,
@@ -29,6 +34,9 @@ export default function App() {
     const savedSessions = localStorage.getItem('iron_sessions');
     const savedProfile = localStorage.getItem('iron_profile');
     const savedExercises = localStorage.getItem('iron_exercises');
+    const savedMuscleGroups = localStorage.getItem('iron_muscle_groups');
+    const savedEquipment = localStorage.getItem('iron_equipment');
+
     if (savedPlans) setPlans(JSON.parse(savedPlans));
     if (savedSessions) setSessions(JSON.parse(savedSessions));
     if (savedProfile) setUserProfile(JSON.parse(savedProfile));
@@ -39,6 +47,8 @@ export default function App() {
       const newCustom = customExercises.filter((e: Exercise) => !defaultIds.has(e.id));
       setExercises([...EXERCISES, ...newCustom]);
     }
+    if (savedMuscleGroups) setMuscleGroups(JSON.parse(savedMuscleGroups));
+    if (savedEquipment) setEquipmentList(JSON.parse(savedEquipment));
   }, []);
 
   // Save to local storage
@@ -46,12 +56,14 @@ export default function App() {
     localStorage.setItem('iron_plans', JSON.stringify(plans));
     localStorage.setItem('iron_sessions', JSON.stringify(sessions));
     localStorage.setItem('iron_profile', JSON.stringify(userProfile));
+    localStorage.setItem('iron_muscle_groups', JSON.stringify(muscleGroups));
+    localStorage.setItem('iron_equipment', JSON.stringify(equipmentList));
     
     // Only save custom exercises
     const defaultIds = new Set(EXERCISES.map(e => e.id));
     const customExercises = exercises.filter(e => !defaultIds.has(e.id));
     localStorage.setItem('iron_exercises', JSON.stringify(customExercises));
-  }, [plans, sessions, userProfile, exercises]);
+  }, [plans, sessions, userProfile, exercises, muscleGroups, equipmentList]);
 
   const addExercise = (exercise: Exercise) => {
     setExercises(prev => [...prev, exercise]);
@@ -118,6 +130,10 @@ export default function App() {
               key="builder" 
               initialPlan={planToEdit}
               availableExercises={exercises}
+              availableMuscleGroups={muscleGroups}
+              availableEquipment={equipmentList}
+              onUpdateMuscleGroups={setMuscleGroups}
+              onUpdateEquipment={setEquipmentList}
               onAddExercise={addExercise}
               onSave={savePlan}
               onCancel={() => {
@@ -429,17 +445,43 @@ function PlanCard({ plan, onStart, onEdit, onDelete }: { plan: WorkoutPlan, onSt
 }
 
 // --- Builder View ---
-function BuilderView({ initialPlan, availableExercises, onAddExercise, onSave, onCancel }: { initialPlan?: WorkoutPlan | null, availableExercises: Exercise[], onAddExercise: (e: Exercise) => void, onSave: (p: WorkoutPlan) => void, onCancel: () => void, key?: React.Key }) {
+function BuilderView({ 
+  initialPlan, 
+  availableExercises, 
+  availableMuscleGroups, 
+  availableEquipment, 
+  onUpdateMuscleGroups, 
+  onUpdateEquipment, 
+  onAddExercise, 
+  onSave, 
+  onCancel 
+}: { 
+  initialPlan?: WorkoutPlan | null, 
+  availableExercises: Exercise[], 
+  availableMuscleGroups: string[], 
+  availableEquipment: string[], 
+  onUpdateMuscleGroups: (items: string[]) => void, 
+  onUpdateEquipment: (items: string[]) => void, 
+  onAddExercise: (e: Exercise) => void, 
+  onSave: (p: WorkoutPlan) => void, 
+  onCancel: () => void, 
+  key?: React.Key 
+}) {
   const [name, setName] = useState(initialPlan?.name || '');
   const [days, setDays] = useState<number[]>(initialPlan?.daysOfWeek || []);
   const [exercises, setExercises] = useState<PlannedExercise[]>(initialPlan?.exercises || []);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [showCreateExercise, setShowCreateExercise] = useState(false);
+  const [managingList, setManagingList] = useState<'muscle' | 'equipment' | null>(null);
   
+  // Filter State
+  const [filterMuscle, setFilterMuscle] = useState<string>('Todos');
+  const [filterEquipment, setFilterEquipment] = useState<string>('Todos');
+
   // New Exercise State
   const [newExerciseName, setNewExerciseName] = useState('');
-  const [newExerciseMuscle, setNewExerciseMuscle] = useState<MuscleGroup>('Peito');
-  const [newExerciseEquipment, setNewExerciseEquipment] = useState<Equipment>('Barra');
+  const [newExerciseMuscle, setNewExerciseMuscle] = useState<string>(availableMuscleGroups[0] || '');
+  const [newExerciseEquipment, setNewExerciseEquipment] = useState<string>(availableEquipment[0] || '');
 
   const daysMap = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 
@@ -536,35 +578,34 @@ function BuilderView({ initialPlan, availableExercises, onAddExercise, onSave, o
             </div>
 
             <div>
-              <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Grupo Muscular</label>
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-xs font-mono text-zinc-500 uppercase tracking-wider">Grupo Muscular</label>
+                <button onClick={() => setManagingList('muscle')} className="text-xs text-emerald-500 font-medium hover:text-emerald-400">Gerenciar</button>
+              </div>
               <select 
                 value={newExerciseMuscle}
-                onChange={e => setNewExerciseMuscle(e.target.value as MuscleGroup)}
+                onChange={e => setNewExerciseMuscle(e.target.value)}
                 className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-lg focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
               >
-                <option value="Peito">Peito</option>
-                <option value="Costas">Costas</option>
-                <option value="Pernas">Pernas</option>
-                <option value="Ombros">Ombros</option>
-                <option value="Braços">Braços</option>
-                <option value="Core">Core</option>
-                <option value="Cardio">Cardio</option>
+                {availableMuscleGroups.map(m => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Equipamento</label>
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-xs font-mono text-zinc-500 uppercase tracking-wider">Equipamento</label>
+                <button onClick={() => setManagingList('equipment')} className="text-xs text-emerald-500 font-medium hover:text-emerald-400">Gerenciar</button>
+              </div>
               <select 
                 value={newExerciseEquipment}
-                onChange={e => setNewExerciseEquipment(e.target.value as Equipment)}
+                onChange={e => setNewExerciseEquipment(e.target.value)}
                 className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-lg focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
               >
-                <option value="Barra">Barra</option>
-                <option value="Halteres">Halteres</option>
-                <option value="Máquina">Máquina</option>
-                <option value="Cabos">Cabos</option>
-                <option value="Peso Corporal">Peso Corporal</option>
-                <option value="Kettlebell">Kettlebell</option>
+                {availableEquipment.map(e => (
+                  <option key={e} value={e}>{e}</option>
+                ))}
               </select>
             </div>
 
@@ -577,6 +618,15 @@ function BuilderView({ initialPlan, availableExercises, onAddExercise, onSave, o
               Salvar Exercício
             </button>
           </div>
+
+          {managingList && (
+            <ListManager 
+              title={managingList === 'muscle' ? 'Grupos Musculares' : 'Equipamentos'}
+              items={managingList === 'muscle' ? availableMuscleGroups : availableEquipment}
+              onUpdate={managingList === 'muscle' ? onUpdateMuscleGroups : onUpdateEquipment}
+              onClose={() => setManagingList(null)}
+            />
+          )}
         </div>
       );
     }
@@ -598,11 +648,49 @@ function BuilderView({ initialPlan, availableExercises, onAddExercise, onSave, o
           Criar Novo Exercício
         </button>
 
-        <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-          {availableExercises.map(ex => (
+        {/* Filters */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div>
+            <label className="block text-xs font-mono text-zinc-500 mb-1 uppercase tracking-wider">Músculo</label>
+            <select 
+              value={filterMuscle}
+              onChange={e => setFilterMuscle(e.target.value)}
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
+            >
+              <option value="Todos">Todos</option>
+              {availableMuscleGroups.map(m => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-mono text-zinc-500 mb-1 uppercase tracking-wider">Equipamento</label>
+            <select 
+              value={filterEquipment}
+              onChange={e => setFilterEquipment(e.target.value)}
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
+            >
+              <option value="Todos">Todos</option>
+              {availableEquipment.map(e => (
+                <option key={e} value={e}>{e}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="space-y-3 max-h-[50vh] overflow-y-auto">
+          {availableExercises
+            .filter(ex => (filterMuscle === 'Todos' || ex.muscleGroup === filterMuscle) && 
+                          (filterEquipment === 'Todos' || ex.equipment === filterEquipment))
+            .map(ex => (
             <button 
               key={ex.id}
-              onClick={() => addExercise(ex.id)}
+              onClick={() => {
+                addExercise(ex.id);
+                // Reset filters when adding
+                setFilterMuscle('Todos');
+                setFilterEquipment('Todos');
+              }}
               className="w-full flex items-center justify-between bg-zinc-900 border border-zinc-800 p-4 rounded-xl hover:border-emerald-500/50 transition-colors text-left"
             >
               <div>
@@ -612,8 +700,26 @@ function BuilderView({ initialPlan, availableExercises, onAddExercise, onSave, o
               <PlusCircle className="text-emerald-500" size={20} />
             </button>
           ))}
+          {availableExercises.filter(ex => (filterMuscle === 'Todos' || ex.muscleGroup === filterMuscle) && 
+                          (filterEquipment === 'Todos' || ex.equipment === filterEquipment)).length === 0 && (
+            <div className="text-center py-8 text-zinc-500">
+              Nenhum exercício encontrado com esses filtros.
+            </div>
+          )}
         </div>
       </div>
+    );
+  }
+
+  // Render ListManager outside of the conditional blocks to ensure it's visible
+  if (managingList) {
+    return (
+      <ListManager 
+        title={managingList === 'muscle' ? 'Grupos Musculares' : 'Equipamentos'}
+        items={managingList === 'muscle' ? availableMuscleGroups : availableEquipment}
+        onUpdate={managingList === 'muscle' ? onUpdateMuscleGroups : onUpdateEquipment}
+        onClose={() => setManagingList(null)}
+      />
     );
   }
 
@@ -743,6 +849,85 @@ function BuilderView({ initialPlan, availableExercises, onAddExercise, onSave, o
         Salvar Treino
       </button>
     </motion.div>
+  );
+}
+
+function ListManager({ title, items, onUpdate, onClose }: { title: string, items: string[], onUpdate: (items: string[]) => void, onClose: () => void }) {
+  const [newItem, setNewItem] = useState('');
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editValue, setEditValue] = useState('');
+
+  const handleAdd = () => {
+    if (newItem.trim()) {
+      onUpdate([...items, newItem.trim()]);
+      setNewItem('');
+    }
+  };
+
+  const handleUpdate = (index: number) => {
+    if (editValue.trim()) {
+      const newItems = [...items];
+      newItems[index] = editValue.trim();
+      onUpdate(newItems);
+      setEditingIndex(null);
+    }
+  };
+
+  const handleDelete = (index: number) => {
+    const newItems = items.filter((_, i) => i !== index);
+    onUpdate(newItems);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-md w-full shadow-xl max-h-[80vh] flex flex-col">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-bold">Gerenciar {title}</h3>
+          <button onClick={onClose} className="p-2 bg-zinc-800 rounded-full">
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="flex gap-2 mb-4">
+          <input
+            type="text"
+            value={newItem}
+            onChange={e => setNewItem(e.target.value)}
+            placeholder={`Novo ${title}`}
+            className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl p-3 focus:outline-none focus:border-emerald-500"
+          />
+          <button onClick={handleAdd} className="bg-emerald-500 text-zinc-950 p-3 rounded-xl">
+            <PlusCircle size={20} />
+          </button>
+        </div>
+
+        <div className="space-y-2 overflow-y-auto flex-1">
+          {items.map((item, index) => (
+            <div key={index} className="flex items-center gap-2 bg-zinc-950 p-3 rounded-xl border border-zinc-800">
+              {editingIndex === index ? (
+                <>
+                  <input
+                    type="text"
+                    value={editValue}
+                    onChange={e => setEditValue(e.target.value)}
+                    className="flex-1 bg-zinc-900 rounded-lg p-2 text-sm focus:outline-none focus:border-emerald-500"
+                    autoFocus
+                  />
+                  <button onClick={() => handleUpdate(index)} className="text-emerald-500 p-2"><CheckCircle2 size={18} /></button>
+                  <button onClick={() => setEditingIndex(null)} className="text-zinc-500 p-2"><X size={18} /></button>
+                </>
+              ) : (
+                <>
+                  <span className="flex-1">{item}</span>
+                  <button onClick={() => { setEditingIndex(index); setEditValue(item); }} className="text-zinc-500 hover:text-zinc-300 p-2"><Pencil size={16} /></button>
+                  <button onClick={() => handleDelete(index)} className="text-zinc-500 hover:text-red-400 p-2"><Trash2 size={16} /></button>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 

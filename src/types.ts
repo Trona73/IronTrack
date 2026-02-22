@@ -1,6 +1,6 @@
-export type Equipment = 'Halteres' | 'Barra' | 'Máquina' | 'Peso Corporal' | 'Cabos' | 'Kettlebell';
+export type Equipment = string;
 
-export type MuscleGroup = 'Peito' | 'Costas' | 'Pernas' | 'Ombros' | 'Braços' | 'Core' | 'Cardio';
+export type MuscleGroup = string;
 
 export interface Exercise {
   id: string;
