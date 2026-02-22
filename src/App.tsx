@@ -1,0 +1,834 @@
+import React, { useState, useEffect } from 'react';
+import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { WorkoutPlan, WorkoutSession, Exercise, PlannedExercise, CompletedSet, CompletedExercise } from './types';
+import { EXERCISES, MOCK_PLANS } from './data';
+
+type View = 'dashboard' | 'builder' | 'active' | 'history';
+
+export default function App() {
+  const [currentView, setCurrentView] = useState<View>('dashboard');
+  const [plans, setPlans] = useState<WorkoutPlan[]>(MOCK_PLANS);
+  const [sessions, setSessions] = useState<WorkoutSession[]>([]);
+  const [activePlan, setActivePlan] = useState<WorkoutPlan | null>(null);
+  const [planToEdit, setPlanToEdit] = useState<WorkoutPlan | null>(null);
+  const [planToDelete, setPlanToDelete] = useState<string | null>(null);
+
+  // Load from local storage
+  useEffect(() => {
+    const savedPlans = localStorage.getItem('iron_plans');
+    const savedSessions = localStorage.getItem('iron_sessions');
+    if (savedPlans) setPlans(JSON.parse(savedPlans));
+    if (savedSessions) setSessions(JSON.parse(savedSessions));
+  }, []);
+
+  // Save to local storage
+  useEffect(() => {
+    localStorage.setItem('iron_plans', JSON.stringify(plans));
+    localStorage.setItem('iron_sessions', JSON.stringify(sessions));
+  }, [plans, sessions]);
+
+  const savePlan = (plan: WorkoutPlan) => {
+    setPlans(prev => {
+      const exists = prev.find(p => p.id === plan.id);
+      if (exists) {
+        return prev.map(p => p.id === plan.id ? plan : p);
+      }
+      return [...prev, plan];
+    });
+    setPlanToEdit(null);
+    setCurrentView('dashboard');
+  };
+
+  const deletePlan = (id: string) => {
+    setPlanToDelete(id);
+  };
+
+  const confirmDelete = () => {
+    if (planToDelete) {
+      setPlans(prev => prev.filter(p => p.id !== planToDelete));
+      setPlanToDelete(null);
+    }
+  };
+
+  const editPlan = (plan: WorkoutPlan) => {
+    setPlanToEdit(plan);
+    setCurrentView('builder');
+  };
+
+  const startWorkout = (plan: WorkoutPlan) => {
+    setActivePlan(plan);
+    setCurrentView('active');
+  };
+
+  const finishWorkout = (session: WorkoutSession) => {
+    setSessions(prev => [session, ...prev]);
+    setActivePlan(null);
+    setCurrentView('dashboard');
+  };
+
+  return (
+    <div className="min-h-screen bg-zinc-950 text-zinc-50 font-sans selection:bg-emerald-500/30">
+      <main className="pb-24 max-w-md mx-auto min-h-screen relative overflow-hidden">
+        <AnimatePresence mode="wait">
+          {currentView === 'dashboard' && (
+            <DashboardView 
+              key="dashboard" 
+              plans={plans} 
+              onStartWorkout={startWorkout} 
+              onNewPlan={() => {
+                setPlanToEdit(null);
+                setCurrentView('builder');
+              }}
+              onEditPlan={editPlan}
+              onDeletePlan={deletePlan}
+            />
+          )}
+          {currentView === 'builder' && (
+            <BuilderView 
+              key="builder" 
+              initialPlan={planToEdit}
+              onSave={savePlan}
+              onCancel={() => {
+                setPlanToEdit(null);
+                setCurrentView('dashboard');
+              }}
+            />
+          )}
+          {currentView === 'active' && activePlan && (
+            <ActiveWorkoutView 
+              key="active" 
+              plan={activePlan} 
+              onFinish={finishWorkout}
+              onCancel={() => {
+                setActivePlan(null);
+                setCurrentView('dashboard');
+              }}
+            />
+          )}
+          {currentView === 'history' && (
+            <HistoryView 
+              key="history" 
+              sessions={sessions} 
+              plans={plans}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Confirmation Modal */}
+        <AnimatePresence>
+          {planToDelete && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+              onClick={() => setPlanToDelete(null)}
+            >
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-sm w-full shadow-xl"
+                onClick={e => e.stopPropagation()}
+              >
+                <h3 className="text-xl font-bold mb-2">Excluir Treino?</h3>
+                <p className="text-zinc-400 mb-6">Esta ação não pode ser desfeita. O histórico de treinos realizados será mantido.</p>
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => setPlanToDelete(null)}
+                    className="flex-1 py-3 rounded-xl font-medium text-zinc-300 hover:bg-zinc-800 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={confirmDelete}
+                    className="flex-1 py-3 rounded-xl font-bold bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
+                  >
+                    Excluir
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
+
+      {/* Bottom Navigation */}
+      {currentView !== 'active' && (
+        <nav className="fixed bottom-0 left-0 right-0 bg-zinc-900/80 backdrop-blur-xl border-t border-zinc-800/50 pb-[env(safe-area-inset-bottom)]">
+          <div className="max-w-md mx-auto flex justify-around items-center p-4">
+            <NavItem 
+              icon={<Home size={24} />} 
+              label="Início" 
+              isActive={currentView === 'dashboard'} 
+              onClick={() => setCurrentView('dashboard')} 
+            />
+            <NavItem 
+              icon={<PlusCircle size={24} />} 
+              label="Criar" 
+              isActive={currentView === 'builder'} 
+              onClick={() => setCurrentView('builder')} 
+            />
+            <NavItem 
+              icon={<HistoryIcon size={24} />} 
+              label="Histórico" 
+              isActive={currentView === 'history'} 
+              onClick={() => setCurrentView('history')} 
+            />
+          </div>
+        </nav>
+      )}
+    </div>
+  );
+}
+
+function NavItem({ icon, label, isActive, onClick }: { icon: React.ReactNode, label: string, isActive: boolean, onClick: () => void }) {
+  return (
+    <button 
+      onClick={onClick}
+      className={`flex flex-col items-center gap-1 transition-colors ${isActive ? 'text-emerald-400' : 'text-zinc-500 hover:text-zinc-300'}`}
+    >
+      {icon}
+      <span className="text-[10px] font-medium uppercase tracking-wider">{label}</span>
+    </button>
+  );
+}
+
+// --- Dashboard View ---
+function DashboardView({ plans, onStartWorkout, onNewPlan, onEditPlan, onDeletePlan, key }: { plans: WorkoutPlan[], onStartWorkout: (p: WorkoutPlan) => void, onNewPlan: () => void, onEditPlan: (p: WorkoutPlan) => void, onDeletePlan: (id: string) => void, key?: React.Key }) {
+  const today = new Date().getDay();
+  const todaysPlans = plans.filter(p => p.daysOfWeek.includes(today));
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="p-6 space-y-8"
+    >
+      <header className="pt-8">
+        <h1 className="text-4xl font-bold tracking-tighter">Iron<span className="text-emerald-500">Track</span></h1>
+        <p className="text-zinc-400 mt-2 font-mono text-sm">SUA ROTINA DE FORÇA</p>
+      </header>
+
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <Calendar className="text-emerald-500" size={20} />
+            Treino de Hoje
+          </h2>
+        </div>
+        
+        {todaysPlans.length > 0 ? (
+          <div className="space-y-4">
+            {todaysPlans.map(plan => (
+              <PlanCard 
+                key={plan.id} 
+                plan={plan} 
+                onStart={() => onStartWorkout(plan)} 
+                onEdit={() => onEditPlan(plan)}
+                onDelete={() => onDeletePlan(plan.id)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 text-center">
+            <Dumbbell className="mx-auto text-zinc-600 mb-3" size={32} />
+            <p className="text-zinc-400 mb-4">Nenhum treino programado para hoje.</p>
+            <button 
+              onClick={onNewPlan}
+              className="bg-zinc-800 text-zinc-200 px-4 py-2 rounded-full text-sm font-medium hover:bg-zinc-700 transition-colors"
+            >
+              Criar Novo Treino
+            </button>
+          </div>
+        )}
+      </section>
+
+      <section>
+        <h2 className="text-xl font-semibold mb-4">Todos os Treinos</h2>
+        <div className="space-y-4">
+          {plans.map(plan => (
+            <PlanCard 
+              key={plan.id} 
+              plan={plan} 
+              onStart={() => onStartWorkout(plan)} 
+              onEdit={() => onEditPlan(plan)}
+              onDelete={() => onDeletePlan(plan.id)}
+            />
+          ))}
+        </div>
+      </section>
+    </motion.div>
+  );
+}
+
+function PlanCard({ plan, onStart, onEdit, onDelete, key }: { plan: WorkoutPlan, onStart: () => void, onEdit: () => void, onDelete: () => void, key?: React.Key }) {
+  const daysMap = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  
+  return (
+    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 hover:border-emerald-500/30 transition-colors group relative">
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h3 className="font-bold text-lg">{plan.name}</h3>
+          <div className="flex gap-2 mt-2">
+            {plan.daysOfWeek.map(d => (
+              <span key={d} className="text-xs font-mono bg-zinc-800 text-zinc-300 px-2 py-1 rounded-md">
+                {daysMap[d]}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button 
+            onClick={(e) => { e.stopPropagation(); onEdit(); }}
+            className="text-zinc-500 hover:text-zinc-300 p-2 rounded-full hover:bg-zinc-800 transition-colors"
+          >
+            <Pencil size={18} />
+          </button>
+          <button 
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            className="text-zinc-500 hover:text-red-400 p-2 rounded-full hover:bg-zinc-800 transition-colors"
+          >
+            <Trash2 size={18} />
+          </button>
+          <button 
+            onClick={onStart}
+            className="bg-emerald-500 text-zinc-950 p-3 rounded-full hover:bg-emerald-400 transition-transform active:scale-95 ml-2"
+          >
+            <Play size={20} className="fill-current" />
+          </button>
+        </div>
+      </div>
+      
+      <div className="text-sm text-zinc-500 flex items-center gap-2">
+        <Dumbbell size={14} />
+        <span>{plan.exercises.length} exercícios</span>
+      </div>
+    </div>
+  );
+}
+
+// --- Builder View ---
+function BuilderView({ initialPlan, onSave, onCancel, key }: { initialPlan?: WorkoutPlan | null, onSave: (p: WorkoutPlan) => void, onCancel: () => void, key?: React.Key }) {
+  const [name, setName] = useState(initialPlan?.name || '');
+  const [days, setDays] = useState<number[]>(initialPlan?.daysOfWeek || []);
+  const [exercises, setExercises] = useState<PlannedExercise[]>(initialPlan?.exercises || []);
+  const [showExercisePicker, setShowExercisePicker] = useState(false);
+
+  const daysMap = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+
+  const toggleDay = (d: number) => {
+    setDays(prev => prev.includes(d) ? prev.filter(day => day !== d) : [...prev, d].sort());
+  };
+
+  const addExercise = (exerciseId: string) => {
+    setExercises(prev => [
+      ...prev, 
+      {
+        id: Math.random().toString(36).substring(7),
+        exerciseId,
+        sets: [{ reps: 10, weight: 0 }, { reps: 10, weight: 0 }, { reps: 10, weight: 0 }]
+      }
+    ]);
+    setShowExercisePicker(false);
+  };
+
+  const updateSet = (exId: string, setIndex: number, field: 'reps' | 'weight', value: number) => {
+    setExercises(prev => prev.map(ex => {
+      if (ex.id !== exId) return ex;
+      const newSets = [...ex.sets];
+      newSets[setIndex] = { ...newSets[setIndex], [field]: value };
+      return { ...ex, sets: newSets };
+    }));
+  };
+
+  const addSet = (exId: string) => {
+    setExercises(prev => prev.map(ex => {
+      if (ex.id !== exId) return ex;
+      const lastSet = ex.sets[ex.sets.length - 1] || { reps: 10, weight: 0 };
+      return { ...ex, sets: [...ex.sets, { ...lastSet }] };
+    }));
+  };
+
+  const removeSet = (exId: string, setIndex: number) => {
+    setExercises(prev => prev.map(ex => {
+      if (ex.id !== exId) return ex;
+      return { ...ex, sets: ex.sets.filter((_, i) => i !== setIndex) };
+    }));
+  };
+
+  const removeExercise = (exId: string) => {
+    setExercises(prev => prev.filter(ex => ex.id !== exId));
+  };
+
+  const handleSave = () => {
+    if (!name.trim() || exercises.length === 0) return;
+    onSave({
+      id: initialPlan?.id || Math.random().toString(36).substring(7),
+      name,
+      daysOfWeek: days,
+      exercises
+    });
+  };
+
+  if (showExercisePicker) {
+    return (
+      <div className="p-6 pt-12">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold">Adicionar Exercício</h2>
+          <button onClick={() => setShowExercisePicker(false)} className="p-2 bg-zinc-800 rounded-full">
+            <X size={20} />
+          </button>
+        </div>
+        <div className="space-y-3">
+          {EXERCISES.map(ex => (
+            <button 
+              key={ex.id}
+              onClick={() => addExercise(ex.id)}
+              className="w-full flex items-center justify-between bg-zinc-900 border border-zinc-800 p-4 rounded-xl hover:border-emerald-500/50 transition-colors text-left"
+            >
+              <div>
+                <div className="font-semibold">{ex.name}</div>
+                <div className="text-xs text-zinc-500 font-mono mt-1">{ex.muscleGroup} • {ex.equipment}</div>
+              </div>
+              <PlusCircle className="text-emerald-500" size={20} />
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      className="p-6 pt-12 space-y-8"
+    >
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold tracking-tight">{initialPlan ? 'Editar Treino' : 'Novo Treino'}</h1>
+        <button onClick={onCancel} className="text-zinc-400 hover:text-white">Cancelar</button>
+      </div>
+
+      <div className="space-y-6">
+        <div>
+          <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Nome do Treino</label>
+          <input 
+            type="text" 
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="Ex: Treino A - Peito"
+            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-lg focus:outline-none focus:border-emerald-500 transition-colors"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Dias da Semana</label>
+          <div className="flex justify-between gap-2">
+            {daysMap.map((d, i) => (
+              <button
+                key={i}
+                onClick={() => toggleDay(i)}
+                className={`w-10 h-10 rounded-full font-medium flex items-center justify-center transition-colors ${
+                  days.includes(i) ? 'bg-emerald-500 text-zinc-950' : 'bg-zinc-900 text-zinc-400 border border-zinc-800'
+                }`}
+              >
+                {d}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <label className="block text-xs font-mono text-zinc-500 uppercase tracking-wider">Exercícios</label>
+            <button 
+              onClick={() => setShowExercisePicker(true)}
+              className="text-emerald-400 text-sm font-medium flex items-center gap-1"
+            >
+              <PlusCircle size={16} /> Adicionar
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {exercises.map((ex, index) => {
+              const exerciseDef = EXERCISES.find(e => e.id === ex.exerciseId);
+              return (
+                <div key={ex.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center font-mono text-xs text-zinc-400">
+                        {index + 1}
+                      </div>
+                      <span className="font-semibold">{exerciseDef?.name}</span>
+                    </div>
+                    <button onClick={() => removeExercise(ex.id)} className="text-red-400 p-2">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 text-xs font-mono text-zinc-500 px-2 mb-1">
+                      <div>Série</div>
+                      <div>Reps</div>
+                      <div>Carga (kg)</div>
+                      <div className="w-6"></div>
+                    </div>
+                    {ex.sets.map((set, sIdx) => (
+                      <div key={sIdx} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-center">
+                        <div className="bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800">
+                          {sIdx + 1}
+                        </div>
+                        <input 
+                          type="number" 
+                          value={set.reps || ''}
+                          onChange={e => updateSet(ex.id, sIdx, 'reps', parseInt(e.target.value) || 0)}
+                          className="bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800 focus:outline-none focus:border-emerald-500"
+                        />
+                        <input 
+                          type="number" 
+                          value={set.weight || ''}
+                          onChange={e => updateSet(ex.id, sIdx, 'weight', parseInt(e.target.value) || 0)}
+                          className="bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800 focus:outline-none focus:border-emerald-500"
+                        />
+                        <button onClick={() => removeSet(ex.id, sIdx)} className="text-zinc-600 hover:text-red-400 p-1">
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ))}
+                    <button 
+                      onClick={() => addSet(ex.id)}
+                      className="w-full mt-2 py-2 border border-dashed border-zinc-700 rounded-lg text-xs font-medium text-zinc-400 hover:text-emerald-400 hover:border-emerald-500/50 transition-colors"
+                    >
+                      + Adicionar Série
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+            {exercises.length === 0 && (
+              <div className="text-center p-8 border border-dashed border-zinc-800 rounded-2xl text-zinc-500">
+                Nenhum exercício adicionado.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <button 
+        onClick={handleSave}
+        disabled={!name.trim() || exercises.length === 0}
+        className="w-full bg-emerald-500 text-zinc-950 py-4 rounded-xl font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+      >
+        <Save size={20} />
+        Salvar Treino
+      </button>
+    </motion.div>
+  );
+}
+
+// --- Active Workout View ---
+function ActiveWorkoutView({ plan, onFinish, onCancel, key }: { plan: WorkoutPlan, onFinish: (s: WorkoutSession) => void, onCancel: () => void, key?: React.Key }) {
+  const [startTime] = useState(new Date().toISOString());
+  const [currentExIndex, setCurrentExIndex] = useState(0);
+  const [completedExercises, setCompletedExercises] = useState<CompletedExercise[]>([]);
+  
+  // State for current exercise being performed
+  const currentPlannedEx = plan.exercises[currentExIndex];
+  const exerciseDef = EXERCISES.find(e => e.id === currentPlannedEx?.exerciseId);
+  
+  const [currentSets, setCurrentSets] = useState<CompletedSet[]>([]);
+  const [currentReps, setCurrentReps] = useState(currentPlannedEx?.sets[0]?.reps || 10);
+  const [currentWeight, setCurrentWeight] = useState(currentPlannedEx?.sets[0]?.weight || 0);
+  const [exStartTime, setExStartTime] = useState(Date.now());
+
+  // Timer state
+  const [elapsed, setElapsed] = useState(0);
+  const [isResting, setIsResting] = useState(false);
+  const [restTime, setRestTime] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - new Date(startTime).getTime()) / 1000));
+      if (isResting) {
+        setRestTime(prev => prev + 1);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [startTime, isResting]);
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
+
+  const completeSet = () => {
+    const newSet: CompletedSet = {
+      reps: currentReps,
+      weight: currentWeight,
+      completedAt: new Date().toISOString()
+    };
+    const newSets = [...currentSets, newSet];
+    setCurrentSets(newSets);
+    
+    setIsResting(true);
+    setRestTime(0);
+
+    // Pre-fill next set if available
+    const nextSetIndex = newSets.length;
+    if (nextSetIndex < currentPlannedEx.sets.length) {
+      setCurrentReps(currentPlannedEx.sets[nextSetIndex].reps);
+      setCurrentWeight(currentPlannedEx.sets[nextSetIndex].weight);
+    }
+  };
+
+  const finishExercise = () => {
+    const duration = Math.floor((Date.now() - exStartTime) / 1000);
+    const completedEx: CompletedExercise = {
+      exerciseId: currentPlannedEx.exerciseId,
+      sets: currentSets,
+      durationSeconds: duration
+    };
+    
+    setCompletedExercises(prev => [...prev, completedEx]);
+    
+    if (currentExIndex < plan.exercises.length - 1) {
+      const nextEx = plan.exercises[currentExIndex + 1];
+      setCurrentExIndex(prev => prev + 1);
+      setCurrentSets([]);
+      setCurrentReps(nextEx.sets[0]?.reps || 10);
+      setCurrentWeight(nextEx.sets[0]?.weight || 0);
+      setExStartTime(Date.now());
+      setIsResting(false);
+    } else {
+      // Finish workout
+      onFinish({
+        id: Math.random().toString(36).substring(7),
+        planId: plan.id,
+        startTime,
+        endTime: new Date().toISOString(),
+        exercises: [...completedExercises, completedEx]
+      });
+    }
+  };
+
+  if (!currentPlannedEx) return null;
+
+  const progress = ((currentExIndex) / plan.exercises.length) * 100;
+  const isLastExercise = currentExIndex === plan.exercises.length - 1;
+  const isLastSet = currentSets.length >= currentPlannedEx.sets.length;
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 1.05 }}
+      className="min-h-screen bg-zinc-950 flex flex-col"
+    >
+      {/* Header */}
+      <div className="p-6 pb-4 bg-zinc-900 border-b border-zinc-800 sticky top-0 z-10">
+        <div className="flex justify-between items-center mb-4">
+          <button onClick={onCancel} className="text-zinc-400 hover:text-white">
+            <X size={24} />
+          </button>
+          <div className="font-mono text-xl font-bold text-emerald-400 tracking-wider">
+            {formatTime(elapsed)}
+          </div>
+          <button onClick={finishExercise} className="text-emerald-500 text-sm font-bold">
+            PULAR
+          </button>
+        </div>
+        
+        {/* Progress Bar */}
+        <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-emerald-500 transition-all duration-500 ease-out"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <div className="text-center mt-2 text-xs font-mono text-zinc-500">
+          EXERCÍCIO {currentExIndex + 1} DE {plan.exercises.length}
+        </div>
+      </div>
+
+      <div className="flex-1 p-6 flex flex-col">
+        {/* Current Exercise Info */}
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold mb-2">{exerciseDef?.name}</h2>
+          <div className="inline-flex items-center gap-2 bg-zinc-900 px-3 py-1 rounded-full text-xs font-mono text-zinc-400 border border-zinc-800">
+            <span>{exerciseDef?.muscleGroup}</span>
+            <span className="w-1 h-1 rounded-full bg-zinc-600" />
+            <span>{exerciseDef?.equipment}</span>
+          </div>
+        </div>
+
+        {/* Rest Timer Overlay */}
+        <AnimatePresence>
+          {isResting && (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="bg-emerald-950/30 border border-emerald-500/30 rounded-2xl p-6 mb-8 text-center"
+            >
+              <div className="text-emerald-500 font-mono text-sm mb-2 uppercase tracking-widest">Descanso</div>
+              <div className="text-5xl font-bold font-mono text-emerald-400 mb-4">{formatTime(restTime)}</div>
+              <button 
+                onClick={() => setIsResting(false)}
+                className="bg-emerald-500/20 text-emerald-400 px-6 py-2 rounded-full text-sm font-bold hover:bg-emerald-500/30 transition-colors"
+              >
+                PRÓXIMA SÉRIE
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Sets History */}
+        <div className="space-y-2 mb-8 flex-1 overflow-y-auto">
+          <div className="grid grid-cols-[auto_1fr_1fr_auto] gap-4 text-xs font-mono text-zinc-500 px-4 mb-2">
+            <div className="w-8">Série</div>
+            <div className="text-center">Reps</div>
+            <div className="text-center">Carga</div>
+            <div className="w-6"></div>
+          </div>
+          
+          {currentPlannedEx.sets.map((plannedSet, idx) => {
+            const isCompleted = idx < currentSets.length;
+            const isCurrent = idx === currentSets.length;
+            const completedData = currentSets[idx];
+
+            return (
+              <div 
+                key={idx} 
+                className={`grid grid-cols-[auto_1fr_1fr_auto] gap-4 items-center p-3 rounded-xl border transition-colors ${
+                  isCompleted ? 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500' : 
+                  isCurrent ? 'bg-zinc-900 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.1)]' : 
+                  'bg-zinc-900/30 border-zinc-800/30 text-zinc-600'
+                }`}
+              >
+                <div className="w-8 text-center font-mono font-bold">{idx + 1}</div>
+                <div className="text-center font-mono text-lg">
+                  {isCompleted ? completedData.reps : plannedSet.reps}
+                </div>
+                <div className="text-center font-mono text-lg">
+                  {isCompleted ? completedData.weight : plannedSet.weight}
+                  <span className="text-xs ml-1 opacity-50">kg</span>
+                </div>
+                <div className="w-6 flex justify-center">
+                  {isCompleted && <CheckCircle2 size={18} className="text-emerald-500" />}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Controls */}
+        {!isResting && !isLastSet && (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 mb-[env(safe-area-inset-bottom)]">
+            <div className="flex gap-4 mb-6">
+              <div className="flex-1">
+                <label className="block text-center text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Reps</label>
+                <div className="flex items-center justify-between bg-zinc-950 rounded-2xl p-2 border border-zinc-800">
+                  <button onClick={() => setCurrentReps(Math.max(1, currentReps - 1))} className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-xl text-xl active:scale-95">-</button>
+                  <span className="text-3xl font-bold font-mono">{currentReps}</span>
+                  <button onClick={() => setCurrentReps(currentReps + 1)} className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-xl text-xl active:scale-95">+</button>
+                </div>
+              </div>
+              <div className="flex-1">
+                <label className="block text-center text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Carga (kg)</label>
+                <div className="flex items-center justify-between bg-zinc-950 rounded-2xl p-2 border border-zinc-800">
+                  <button onClick={() => setCurrentWeight(Math.max(0, currentWeight - 2.5))} className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-xl text-xl active:scale-95">-</button>
+                  <span className="text-3xl font-bold font-mono">{currentWeight}</span>
+                  <button onClick={() => setCurrentWeight(currentWeight + 2.5)} className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-xl text-xl active:scale-95">+</button>
+                </div>
+              </div>
+            </div>
+            
+            <button 
+              onClick={completeSet}
+              className="w-full bg-emerald-500 text-zinc-950 py-4 rounded-2xl font-bold text-xl active:scale-[0.98] transition-transform shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+            >
+              CONCLUIR SÉRIE
+            </button>
+          </div>
+        )}
+
+        {isLastSet && !isResting && (
+          <button 
+            onClick={finishExercise}
+            className="w-full bg-emerald-500 text-zinc-950 py-4 rounded-2xl font-bold text-xl active:scale-[0.98] transition-transform shadow-[0_0_20px_rgba(16,185,129,0.3)] mb-[env(safe-area-inset-bottom)]"
+          >
+            {isLastExercise ? 'FINALIZAR TREINO' : 'PRÓXIMO EXERCÍCIO'}
+          </button>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+// --- History View ---
+function HistoryView({ sessions, plans, key }: { sessions: WorkoutSession[], plans: WorkoutPlan[], key?: React.Key }) {
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="p-6 pt-12 space-y-6"
+    >
+      <header>
+        <h1 className="text-3xl font-bold tracking-tight mb-2">Histórico</h1>
+        <p className="text-zinc-400">Seus treinos concluídos.</p>
+      </header>
+
+      {sessions.length === 0 ? (
+        <div className="text-center p-8 border border-dashed border-zinc-800 rounded-2xl text-zinc-500 mt-8">
+          <HistoryIcon className="mx-auto mb-4 opacity-50" size={32} />
+          Nenhum treino registrado ainda.
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {sessions.map(session => {
+            const plan = plans.find(p => p.id === session.planId);
+            const date = new Date(session.startTime);
+            const duration = session.endTime ? Math.floor((new Date(session.endTime).getTime() - date.getTime()) / 60000) : 0;
+            const totalVolume = session.exercises.reduce((acc, ex) => {
+              return acc + ex.sets.reduce((setAcc, set) => setAcc + (set.reps * set.weight), 0);
+            }, 0);
+
+            return (
+              <div key={session.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="font-bold text-lg">{plan?.name || 'Treino Excluído'}</h3>
+                    <div className="text-sm text-zinc-400 mt-1">
+                      {date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'short' })}
+                    </div>
+                  </div>
+                  <div className="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full text-xs font-mono flex items-center gap-1">
+                    <Clock size={12} />
+                    {duration} min
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-zinc-800/50">
+                  <div>
+                    <div className="text-xs text-zinc-500 font-mono uppercase tracking-wider mb-1">Exercícios</div>
+                    <div className="font-bold text-xl">{session.exercises.length}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-zinc-500 font-mono uppercase tracking-wider mb-1">Volume Total</div>
+                    <div className="font-bold text-xl">{totalVolume} <span className="text-sm text-zinc-500 font-normal">kg</span></div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </motion.div>
+  );
+}
