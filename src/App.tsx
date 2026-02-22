@@ -1104,17 +1104,17 @@ function HistoryView({ sessions, plans, availableExercises }: { sessions: Workou
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="p-6 pt-12 space-y-6"
+      className="p-6 pt-12 space-y-4"
     >
       <header>
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Histórico</h1>
+        <h1 className="text-3xl font-bold tracking-tight mb-1">Histórico</h1>
         <p className="text-zinc-400">Seus treinos concluídos.</p>
       </header>
 
       {/* Progress Chart Section */}
       {performedExerciseIds.length > 0 && (
-        <section className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 mb-6">
-          <div className="flex items-center gap-2 mb-4">
+        <section className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mb-4">
+          <div className="flex items-center gap-2 mb-3">
             <TrendingUp className="text-emerald-500" size={20} />
             <h2 className="font-bold text-lg">Progressão de Carga</h2>
           </div>
@@ -1134,7 +1134,7 @@ function HistoryView({ sessions, plans, availableExercises }: { sessions: Workou
           </div>
 
           {selectedExerciseId && chartData.length > 0 ? (
-            <div className="h-64 w-full">
+            <div className="h-52 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
@@ -1185,7 +1185,7 @@ function HistoryView({ sessions, plans, availableExercises }: { sessions: Workou
           Nenhum treino registrado ainda.
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           <h2 className="font-bold text-lg px-1">Últimos Treinos</h2>
           {sessions.map(session => {
             const plan = plans.find(p => p.id === session.planId);
@@ -1196,11 +1196,11 @@ function HistoryView({ sessions, plans, availableExercises }: { sessions: Workou
             }, 0);
 
             return (
-              <div key={session.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
-                <div className="flex justify-between items-start mb-4">
+              <div key={session.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+                <div className="flex justify-between items-start mb-2">
                   <div>
                     <h3 className="font-bold text-lg">{plan?.name || 'Treino Excluído'}</h3>
-                    <div className="text-sm text-zinc-400 mt-1">
+                    <div className="text-sm text-zinc-400 mt-0.5">
                       {date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'short' })}
                     </div>
                   </div>
@@ -1210,13 +1210,13 @@ function HistoryView({ sessions, plans, availableExercises }: { sessions: Workou
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-zinc-800/50">
+                <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-zinc-800/50">
                   <div>
-                    <div className="text-xs text-zinc-500 font-mono uppercase tracking-wider mb-1">Exercícios</div>
+                    <div className="text-xs text-zinc-500 font-mono uppercase tracking-wider mb-0.5">Exercícios</div>
                     <div className="font-bold text-xl">{session.exercises.length}</div>
                   </div>
                   <div>
-                    <div className="text-xs text-zinc-500 font-mono uppercase tracking-wider mb-1">Volume Total</div>
+                    <div className="text-xs text-zinc-500 font-mono uppercase tracking-wider mb-0.5">Volume Total</div>
                     <div className="font-bold text-xl">{totalVolume} <span className="text-sm text-zinc-500 font-normal">kg</span></div>
                   </div>
                 </div>
