@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User, TrendingUp } from 'lucide-react';
+import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User, TrendingUp, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { WorkoutPlan, WorkoutSession, Exercise, PlannedExercise, CompletedSet, CompletedExercise, UserProfile, Equipment, MuscleGroup } from './types';
@@ -127,6 +127,7 @@ export default function App() {
             <DashboardView 
               key="dashboard" 
               plans={plans} 
+              sessions={sessions}
               onStartWorkout={startWorkout} 
               onNewPlan={() => {
                 setPlanToEdit(null);
@@ -284,11 +285,24 @@ function NavItem({ icon, label, isActive, onClick }: { icon: React.ReactNode, la
 }
 
 // --- Dashboard View ---
-function DashboardView({ plans, onStartWorkout, onNewPlan, onEditPlan, onDeletePlan }: { plans: WorkoutPlan[], onStartWorkout: (p: WorkoutPlan) => void, onNewPlan: () => void, onEditPlan: (p: WorkoutPlan) => void, onDeletePlan: (id: string) => void, key?: React.Key }) {
+function DashboardView({ plans, sessions, onStartWorkout, onNewPlan, onEditPlan, onDeletePlan }: { plans: WorkoutPlan[], sessions: WorkoutSession[], onStartWorkout: (p: WorkoutPlan) => void, onNewPlan: () => void, onEditPlan: (p: WorkoutPlan) => void, onDeletePlan: (id: string) => void, key?: React.Key }) {
   const today = new Date().getDay();
   const todaysPlans = plans.filter(p => p.daysOfWeek.includes(today));
   const [time, setTime] = useState(new Date());
   const [showPlanSelector, setShowPlanSelector] = useState(false);
+  const [reactivatedPlans, setReactivatedPlans] = useState<string[]>([]);
+
+  const isPlanCompletedToday = (planId: string) => {
+    if (reactivatedPlans.includes(planId)) return false;
+    const now = new Date();
+    return sessions.some(s => {
+      const sDate = new Date(s.startTime);
+      return s.planId === planId && 
+             sDate.getDate() === now.getDate() &&
+             sDate.getMonth() === now.getMonth() &&
+             sDate.getFullYear() === now.getFullYear();
+    });
+  };
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -333,6 +347,8 @@ function DashboardView({ plans, onStartWorkout, onNewPlan, onEditPlan, onDeleteP
               <PlanCard 
                 key={plan.id} 
                 plan={plan} 
+                isCompleted={isPlanCompletedToday(plan.id)}
+                onActivate={() => setReactivatedPlans(prev => [...prev, plan.id])}
                 onStart={() => onStartWorkout(plan)} 
                 onEdit={() => onEditPlan(plan)}
                 onDelete={() => onDeletePlan(plan.id)}
@@ -424,14 +440,14 @@ function DashboardView({ plans, onStartWorkout, onNewPlan, onEditPlan, onDeleteP
   );
 }
 
-function PlanCard({ plan, onStart, onEdit, onDelete }: { plan: WorkoutPlan, onStart: () => void, onEdit: () => void, onDelete: () => void, key?: React.Key }) {
+function PlanCard({ plan, onStart, onEdit, onDelete, isCompleted, onActivate }: { plan: WorkoutPlan, onStart: () => void, onEdit: () => void, onDelete: () => void, isCompleted?: boolean, onActivate?: () => void, key?: React.Key }) {
   const daysMap = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
   
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 hover:border-emerald-500/30 transition-colors group relative">
+    <div className={`bg-zinc-900 border border-zinc-800 rounded-2xl p-5 transition-colors group relative ${isCompleted ? 'opacity-50' : 'hover:border-emerald-500/30'}`}>
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h3 className="font-bold text-lg">{plan.name}</h3>
+          <h3 className={`font-bold text-lg ${isCompleted ? 'line-through decoration-zinc-500' : ''}`}>{plan.name}</h3>
           <div className="flex gap-2 mt-2">
             {plan.daysOfWeek.map(d => (
               <span key={d} className="text-xs font-mono bg-zinc-800 text-zinc-300 px-2 py-1 rounded-md">
@@ -453,12 +469,22 @@ function PlanCard({ plan, onStart, onEdit, onDelete }: { plan: WorkoutPlan, onSt
           >
             <Trash2 size={18} />
           </button>
-          <button 
-            onClick={onStart}
-            className="bg-emerald-500 text-zinc-950 p-3 rounded-full hover:bg-emerald-400 transition-transform active:scale-95 ml-2"
-          >
-            <Play size={20} className="fill-current" />
-          </button>
+          {isCompleted && onActivate ? (
+            <button 
+              onClick={onActivate}
+              className="bg-zinc-800 text-zinc-300 p-3 rounded-full hover:bg-zinc-700 hover:text-emerald-400 transition-colors ml-2"
+              title="Repetir Treino"
+            >
+              <RotateCcw size={20} />
+            </button>
+          ) : (
+            <button 
+              onClick={onStart}
+              className="bg-emerald-500 text-zinc-950 p-3 rounded-full hover:bg-emerald-400 transition-transform active:scale-95 ml-2"
+            >
+              <Play size={20} className="fill-current" />
+            </button>
+          )}
         </div>
       </div>
       
