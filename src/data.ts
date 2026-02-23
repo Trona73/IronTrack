@@ -69,5 +69,222 @@ export const MOCK_PLANS = [
         ]
       }
     ]
+  },
+  {
+    id: 'p3',
+    name: 'Treino C - Pernas e Ombros',
+    daysOfWeek: [3, 6], // Qua, Sab
+    exercises: [
+      {
+        id: 'pe5',
+        exerciseId: 'e2',
+        sets: [
+          { reps: 10, weight: 80 },
+          { reps: 8, weight: 90 },
+          { reps: 6, weight: 100 },
+        ]
+      },
+      {
+        id: 'pe6',
+        exerciseId: 'e7',
+        sets: [
+          { reps: 12, weight: 120 },
+          { reps: 12, weight: 140 },
+          { reps: 10, weight: 160 },
+        ]
+      },
+      {
+        id: 'pe7',
+        exerciseId: 'e4',
+        sets: [
+          { reps: 12, weight: 14 },
+          { reps: 10, weight: 16 },
+          { reps: 8, weight: 18 },
+        ]
+      },
+      {
+        id: 'pe8',
+        exerciseId: 'e9',
+        sets: [
+          { reps: 15, weight: 8 },
+          { reps: 12, weight: 10 },
+          { reps: 12, weight: 10 },
+        ]
+      }
+    ]
+  },
+  {
+    id: 'p4',
+    name: 'Treino D - Full Body',
+    daysOfWeek: [0], // Dom
+    exercises: [
+      {
+        id: 'pe9',
+        exerciseId: 'e2',
+        sets: [{ reps: 10, weight: 60 }, { reps: 10, weight: 60 }]
+      },
+      {
+        id: 'pe10',
+        exerciseId: 'e1',
+        sets: [{ reps: 10, weight: 50 }, { reps: 10, weight: 50 }]
+      },
+      {
+        id: 'pe11',
+        exerciseId: 'e15',
+        sets: [{ reps: 10, weight: 40 }, { reps: 10, weight: 40 }]
+      },
+      {
+        id: 'pe12',
+        exerciseId: 'e4',
+        sets: [{ reps: 12, weight: 12 }, { reps: 12, weight: 12 }]
+      }
+    ]
+  },
+  {
+    id: 'p5',
+    name: 'Treino E - Core Fortalecimento',
+    daysOfWeek: [1, 3, 5], // Seg, Qua, Sex
+    exercises: [
+      {
+        id: 'pe13',
+        exerciseId: 'e13',
+        sets: [{ reps: 60, weight: 0 }, { reps: 60, weight: 0 }, { reps: 45, weight: 0 }]
+      },
+      {
+        id: 'pe14',
+        exerciseId: 'e14',
+        sets: [{ reps: 20, weight: 0 }, { reps: 20, weight: 0 }, { reps: 20, weight: 0 }]
+      }
+    ]
+  },
+  {
+    id: 'p6',
+    name: 'Treino F - Força Pura',
+    daysOfWeek: [2, 4], // Ter, Qui
+    exercises: [
+      {
+        id: 'pe15',
+        exerciseId: 'e1',
+        sets: [{ reps: 5, weight: 80 }, { reps: 5, weight: 85 }, { reps: 3, weight: 90 }]
+      },
+      {
+        id: 'pe16',
+        exerciseId: 'e3',
+        sets: [{ reps: 5, weight: 100 }, { reps: 5, weight: 110 }, { reps: 3, weight: 120 }]
+      },
+      {
+        id: 'pe17',
+        exerciseId: 'e2',
+        sets: [{ reps: 5, weight: 90 }, { reps: 5, weight: 95 }, { reps: 3, weight: 100 }]
+      }
+    ]
+  },
+  {
+    id: 'p7',
+    name: 'Treino G - Hipertrofia Pernas',
+    daysOfWeek: [5], // Sex
+    exercises: [
+      {
+        id: 'pe18',
+        exerciseId: 'e10',
+        sets: [{ reps: 15, weight: 40 }, { reps: 12, weight: 45 }, { reps: 10, weight: 50 }]
+      },
+      {
+        id: 'pe19',
+        exerciseId: 'e11',
+        sets: [{ reps: 15, weight: 40 }, { reps: 12, weight: 45 }, { reps: 10, weight: 50 }]
+      },
+      {
+        id: 'pe20',
+        exerciseId: 'e12',
+        sets: [{ reps: 20, weight: 30 }, { reps: 15, weight: 35 }, { reps: 15, weight: 40 }]
+      },
+      {
+        id: 'pe21',
+        exerciseId: 'e7',
+        sets: [{ reps: 12, weight: 100 }, { reps: 10, weight: 120 }, { reps: 8, weight: 140 }]
+      }
+    ]
+  },
+  {
+    id: 'p8',
+    name: 'Treino H - Calistenia Básica',
+    daysOfWeek: [6], // Sab
+    exercises: [
+      {
+        id: 'pe22',
+        exerciseId: 'e13',
+        sets: [{ reps: 45, weight: 0 }, { reps: 45, weight: 0 }]
+      },
+      {
+        id: 'pe23',
+        exerciseId: 'e14',
+        sets: [{ reps: 15, weight: 0 }, { reps: 15, weight: 0 }]
+      },
+      {
+        id: 'pe24',
+        exerciseId: 'e2',
+        sets: [{ reps: 20, weight: 0 }, { reps: 20, weight: 0 }]
+      }
+    ]
+  },
+  {
+    id: 'p9',
+    name: 'Treino I - Upper Body',
+    daysOfWeek: [1, 4], // Seg, Qui
+    exercises: [
+      {
+        id: 'pe25',
+        exerciseId: 'e1',
+        sets: [{ reps: 10, weight: 50 }, { reps: 8, weight: 60 }]
+      },
+      {
+        id: 'pe26',
+        exerciseId: 'e15',
+        sets: [{ reps: 10, weight: 40 }, { reps: 8, weight: 50 }]
+      },
+      {
+        id: 'pe27',
+        exerciseId: 'e4',
+        sets: [{ reps: 12, weight: 12 }, { reps: 10, weight: 14 }]
+      },
+      {
+        id: 'pe28',
+        exerciseId: 'e5',
+        sets: [{ reps: 12, weight: 20 }, { reps: 10, weight: 25 }]
+      },
+      {
+        id: 'pe29',
+        exerciseId: 'e6',
+        sets: [{ reps: 15, weight: 15 }, { reps: 12, weight: 20 }]
+      }
+    ]
+  },
+  {
+    id: 'p10',
+    name: 'Treino J - Lower Body',
+    daysOfWeek: [2, 5], // Ter, Sex
+    exercises: [
+      {
+        id: 'pe30',
+        exerciseId: 'e2',
+        sets: [{ reps: 10, weight: 70 }, { reps: 8, weight: 80 }]
+      },
+      {
+        id: 'pe31',
+        exerciseId: 'e3',
+        sets: [{ reps: 8, weight: 90 }, { reps: 6, weight: 100 }]
+      },
+      {
+        id: 'pe32',
+        exerciseId: 'e11',
+        sets: [{ reps: 12, weight: 40 }, { reps: 10, weight: 45 }]
+      },
+      {
+        id: 'pe33',
+        exerciseId: 'e12',
+        sets: [{ reps: 15, weight: 30 }, { reps: 15, weight: 30 }]
+      }
+    ]
   }
 ];
