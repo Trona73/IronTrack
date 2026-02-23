@@ -48,6 +48,7 @@ export interface UserProfile {
   height: number;
   age: number;
   gender: 'male' | 'female' | 'other';
+  photoUrl?: string;
 }
 
 export interface WorkoutSession {

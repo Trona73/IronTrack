@@ -129,6 +129,8 @@ export default function App() {
               plans={plans} 
               sessions={sessions}
               availableExercises={exercises}
+              userProfile={userProfile}
+              onUpdateProfile={setUserProfile}
               onStartWorkout={startWorkout} 
               onNewPlan={() => {
                 setPlanToEdit(null);
@@ -286,12 +288,45 @@ function NavItem({ icon, label, isActive, onClick }: { icon: React.ReactNode, la
 }
 
 // --- Dashboard View ---
-function DashboardView({ plans, sessions, availableExercises, onStartWorkout, onNewPlan, onEditPlan, onDeletePlan }: { plans: WorkoutPlan[], sessions: WorkoutSession[], availableExercises: Exercise[], onStartWorkout: (p: WorkoutPlan) => void, onNewPlan: () => void, onEditPlan: (p: WorkoutPlan) => void, onDeletePlan: (id: string) => void, key?: React.Key }) {
+function DashboardView({ 
+  plans, 
+  sessions, 
+  availableExercises, 
+  userProfile,
+  onUpdateProfile,
+  onStartWorkout, 
+  onNewPlan, 
+  onEditPlan, 
+  onDeletePlan 
+}: { 
+  plans: WorkoutPlan[], 
+  sessions: WorkoutSession[], 
+  availableExercises: Exercise[], 
+  userProfile: UserProfile,
+  onUpdateProfile: (p: UserProfile) => void,
+  onStartWorkout: (p: WorkoutPlan) => void, 
+  onNewPlan: () => void, 
+  onEditPlan: (p: WorkoutPlan) => void, 
+  onDeletePlan: (id: string) => void, 
+  key?: React.Key 
+}) {
   const today = new Date().getDay();
   const todaysPlans = plans.filter(p => p.daysOfWeek.includes(today));
   const [time, setTime] = useState(new Date());
   const [showPlanSelector, setShowPlanSelector] = useState(false);
   const [reactivatedPlans, setReactivatedPlans] = useState<string[]>([]);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        onUpdateProfile({ ...userProfile, photoUrl: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const isPlanCompletedToday = (planId: string) => {
     if (reactivatedPlans.includes(planId)) return false;
@@ -323,13 +358,35 @@ function DashboardView({ plans, sessions, availableExercises, onStartWorkout, on
           <p className="text-zinc-400 mt-2 font-mono text-sm">SUA ROTINA DE FORÇA</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="text-sm font-bold text-zinc-100 tracking-tight uppercase flex items-center gap-2">
-            {time.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}
-            <span className="text-emerald-500">{time.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
+          <div className="flex flex-col items-end">
+            <div className="text-sm font-bold text-zinc-100 tracking-tight uppercase flex items-center gap-2">
+              {time.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}
+              <span className="text-emerald-500">{time.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
+            </div>
+            <div className="text-xs font-mono text-zinc-500 bg-zinc-900/80 px-2 py-1 rounded-md border border-zinc-800 flex items-center gap-1.5">
+              <Clock size={10} />
+              {time.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+            </div>
           </div>
-          <div className="text-xs font-mono text-zinc-500 bg-zinc-900/80 px-2 py-1 rounded-md border border-zinc-800 flex items-center gap-1.5">
-            <Clock size={10} />
-            {time.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+          
+          <div 
+            onClick={() => fileInputRef.current?.click()}
+            className="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center overflow-hidden cursor-pointer hover:border-emerald-500 transition-colors"
+          >
+            {userProfile.photoUrl ? (
+              <img src={userProfile.photoUrl} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-lg font-bold text-zinc-400">
+                {userProfile.name ? userProfile.name.charAt(0).toUpperCase() : 'U'}
+              </span>
+            )}
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handlePhotoUpload} 
+              accept="image/png, image/jpeg" 
+              className="hidden" 
+            />
           </div>
         </div>
       </header>
