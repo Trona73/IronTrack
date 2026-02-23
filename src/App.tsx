@@ -697,14 +697,14 @@ function BuilderView({
                   </div>
 
                   <div className="space-y-2">
-                    <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 text-xs font-mono text-zinc-500 px-2 mb-1">
-                      <div>Série</div>
-                      <div>Reps</div>
-                      <div>Carga (kg)</div>
-                      <div className="w-6"></div>
+                    <div className="grid grid-cols-[3rem_1fr_1fr_3rem] gap-2 text-xs font-mono text-zinc-500 px-2 mb-1">
+                      <div className="text-center">Série</div>
+                      <div className="text-center">Reps</div>
+                      <div className="text-center">Carga (kg)</div>
+                      <div className="text-center"></div>
                     </div>
                     {ex.sets.map((set, sIdx) => (
-                      <div key={sIdx} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-center">
+                      <div key={sIdx} className="grid grid-cols-[3rem_1fr_1fr_3rem] gap-2 items-center">
                         <div className="bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800">
                           {sIdx + 1}
                         </div>
@@ -712,15 +712,15 @@ function BuilderView({
                           type="number" 
                           value={set.reps || ''}
                           onChange={e => updateSet(ex.id, sIdx, 'reps', parseInt(e.target.value) || 0)}
-                          className="bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800 focus:outline-none focus:border-emerald-500"
+                          className="w-full min-w-0 bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800 focus:outline-none focus:border-emerald-500"
                         />
                         <input 
                           type="number" 
                           value={set.weight || ''}
                           onChange={e => updateSet(ex.id, sIdx, 'weight', parseInt(e.target.value) || 0)}
-                          className="bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800 focus:outline-none focus:border-emerald-500"
+                          className="w-full min-w-0 bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800 focus:outline-none focus:border-emerald-500"
                         />
-                        <button onClick={() => removeSet(ex.id, sIdx)} className="text-zinc-600 hover:text-red-400 p-1">
+                        <button onClick={() => removeSet(ex.id, sIdx)} className="text-zinc-600 hover:text-red-400 p-1 flex justify-center items-center h-full w-full">
                           <X size={16} />
                         </button>
                       </div>
