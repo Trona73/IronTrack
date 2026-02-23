@@ -128,6 +128,7 @@ export default function App() {
               key="dashboard" 
               plans={plans} 
               sessions={sessions}
+              availableExercises={exercises}
               onStartWorkout={startWorkout} 
               onNewPlan={() => {
                 setPlanToEdit(null);
@@ -285,7 +286,7 @@ function NavItem({ icon, label, isActive, onClick }: { icon: React.ReactNode, la
 }
 
 // --- Dashboard View ---
-function DashboardView({ plans, sessions, onStartWorkout, onNewPlan, onEditPlan, onDeletePlan }: { plans: WorkoutPlan[], sessions: WorkoutSession[], onStartWorkout: (p: WorkoutPlan) => void, onNewPlan: () => void, onEditPlan: (p: WorkoutPlan) => void, onDeletePlan: (id: string) => void, key?: React.Key }) {
+function DashboardView({ plans, sessions, availableExercises, onStartWorkout, onNewPlan, onEditPlan, onDeletePlan }: { plans: WorkoutPlan[], sessions: WorkoutSession[], availableExercises: Exercise[], onStartWorkout: (p: WorkoutPlan) => void, onNewPlan: () => void, onEditPlan: (p: WorkoutPlan) => void, onDeletePlan: (id: string) => void, key?: React.Key }) {
   const today = new Date().getDay();
   const todaysPlans = plans.filter(p => p.daysOfWeek.includes(today));
   const [time, setTime] = useState(new Date());
@@ -347,6 +348,7 @@ function DashboardView({ plans, sessions, onStartWorkout, onNewPlan, onEditPlan,
               <PlanCard 
                 key={plan.id} 
                 plan={plan} 
+                availableExercises={availableExercises}
                 isCompleted={isPlanCompletedToday(plan.id)}
                 onActivate={() => setReactivatedPlans(prev => [...prev, plan.id])}
                 onStart={() => onStartWorkout(plan)} 
@@ -376,6 +378,7 @@ function DashboardView({ plans, sessions, onStartWorkout, onNewPlan, onEditPlan,
             <PlanCard 
               key={plan.id} 
               plan={plan} 
+              availableExercises={availableExercises}
               onStart={() => onStartWorkout(plan)} 
               onEdit={() => onEditPlan(plan)}
               onDelete={() => onDeletePlan(plan.id)}
@@ -440,7 +443,7 @@ function DashboardView({ plans, sessions, onStartWorkout, onNewPlan, onEditPlan,
   );
 }
 
-function PlanCard({ plan, onStart, onEdit, onDelete, isCompleted, onActivate }: { plan: WorkoutPlan, onStart: () => void, onEdit: () => void, onDelete: () => void, isCompleted?: boolean, onActivate?: () => void, key?: React.Key }) {
+function PlanCard({ plan, availableExercises, onStart, onEdit, onDelete, isCompleted, onActivate }: { plan: WorkoutPlan, availableExercises: Exercise[], onStart: () => void, onEdit: () => void, onDelete: () => void, isCompleted?: boolean, onActivate?: () => void, key?: React.Key }) {
   const daysMap = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
   
   return (
@@ -488,9 +491,19 @@ function PlanCard({ plan, onStart, onEdit, onDelete, isCompleted, onActivate }: 
         </div>
       </div>
       
-      <div className="text-sm text-zinc-500 flex items-center gap-2">
-        <Dumbbell size={14} />
-        <span>{plan.exercises.length} exercícios</span>
+      <div className="space-y-1">
+        {plan.exercises.map((ex, index) => {
+          const exerciseName = availableExercises.find(e => e.id === ex.exerciseId)?.name || 'Exercício desconhecido';
+          return (
+            <div key={ex.id} className="text-sm text-zinc-400 flex items-center gap-2">
+              <span className="text-zinc-600 font-mono text-xs w-4 text-right">{index + 1}.</span>
+              <span>{exerciseName}</span>
+            </div>
+          );
+        })}
+        {plan.exercises.length === 0 && (
+          <div className="text-sm text-zinc-500 italic">Nenhum exercício</div>
+        )}
       </div>
     </div>
   );
