@@ -352,12 +352,12 @@ function DashboardView({
       exit={{ opacity: 0, y: -20 }}
       className="p-6 space-y-8"
     >
-      <header className="pt-8 flex justify-between items-end">
+      <header className="pt-8 flex justify-between items-center">
         <div>
           <h1 className="text-4xl font-bold tracking-tighter">Iron<span className="text-emerald-500">Track</span></h1>
           <p className="text-zinc-400 mt-2 font-mono text-sm">SUA ROTINA DE FORÇA</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-6">
           <div className="flex flex-col items-end">
             <div className="text-sm font-bold text-zinc-100 tracking-tight uppercase flex items-center gap-2">
               {time.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}
@@ -371,12 +371,12 @@ function DashboardView({
           
           <div 
             onClick={() => fileInputRef.current?.click()}
-            className="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center overflow-hidden cursor-pointer hover:border-emerald-500 transition-colors"
+            className="w-16 h-16 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center overflow-hidden cursor-pointer hover:border-emerald-500 transition-colors"
           >
             {userProfile.photoUrl ? (
               <img src={userProfile.photoUrl} alt="Profile" className="w-full h-full object-cover" />
             ) : (
-              <span className="text-lg font-bold text-zinc-400">
+              <span className="text-2xl font-bold text-zinc-400">
                 {userProfile.name ? userProfile.name.charAt(0).toUpperCase() : 'U'}
               </span>
             )}
