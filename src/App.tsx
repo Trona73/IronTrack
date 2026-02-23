@@ -8,7 +8,7 @@ import { EXERCISES, MOCK_PLANS } from './data';
 const DEFAULT_MUSCLE_GROUPS = ['Peito', 'Costas', 'Pernas', 'Ombros', 'Braços', 'Core', 'Cardio'];
 const DEFAULT_EQUIPMENT = ['Halteres', 'Barra', 'Máquina', 'Peso Corporal', 'Cabos', 'Kettlebell'];
 
-type View = 'dashboard' | 'builder' | 'active' | 'history' | 'profile' | 'exercises';
+type View = 'dashboard' | 'builder' | 'active' | 'history' | 'profile' | 'exercises' | 'weekly-schedule';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<View>('dashboard');
@@ -26,6 +26,7 @@ export default function App() {
   });
   const [activePlan, setActivePlan] = useState<WorkoutPlan | null>(null);
   const [planToEdit, setPlanToEdit] = useState<WorkoutPlan | null>(null);
+  const [dayToEdit, setDayToEdit] = useState<number | null>(null);
   const [planToDelete, setPlanToDelete] = useState<string | null>(null);
 
   // Load from local storage
@@ -108,6 +109,18 @@ export default function App() {
     setCurrentView('builder');
   };
 
+  const togglePlanDay = (planId: string, day: number) => {
+    setPlans(prev => prev.map(p => {
+      if (p.id === planId) {
+        const newDays = p.daysOfWeek.includes(day)
+          ? p.daysOfWeek.filter(d => d !== day)
+          : [...p.daysOfWeek, day].sort();
+        return { ...p, daysOfWeek: newDays };
+      }
+      return p;
+    }));
+  };
+
   const startWorkout = (plan: WorkoutPlan) => {
     setActivePlan(plan);
     setCurrentView('active');
@@ -138,6 +151,23 @@ export default function App() {
               }}
               onEditPlan={editPlan}
               onDeletePlan={deletePlan}
+              onEditDay={(day) => {
+                setDayToEdit(day);
+                setCurrentView('weekly-schedule');
+              }}
+            />
+          )}
+          {currentView === 'weekly-schedule' && dayToEdit !== null && (
+            <WeeklyScheduleView
+              key="weekly-schedule"
+              day={dayToEdit}
+              allPlans={plans}
+              availableExercises={exercises}
+              onTogglePlanDay={togglePlanDay}
+              onBack={() => {
+                setDayToEdit(null);
+                setCurrentView('dashboard');
+              }}
             />
           )}
           {currentView === 'builder' && (
@@ -297,7 +327,8 @@ function DashboardView({
   onStartWorkout, 
   onNewPlan, 
   onEditPlan, 
-  onDeletePlan 
+  onDeletePlan,
+  onEditDay
 }: { 
   plans: WorkoutPlan[], 
   sessions: WorkoutSession[], 
@@ -308,6 +339,7 @@ function DashboardView({
   onNewPlan: () => void, 
   onEditPlan: (p: WorkoutPlan) => void, 
   onDeletePlan: (id: string) => void, 
+  onEditDay: (day: number) => void,
   key?: React.Key 
 }) {
   const today = new Date().getDay();
@@ -316,6 +348,8 @@ function DashboardView({
   const [showPlanSelector, setShowPlanSelector] = useState(false);
   const [reactivatedPlans, setReactivatedPlans] = useState<string[]>([]);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const daysMap = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  const fullDaysMap = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -429,6 +463,40 @@ function DashboardView({
       </section>
 
       <section>
+        <h2 className="text-xl font-semibold mb-4">Treino da Semana</h2>
+        <div className="grid grid-cols-1 gap-4">
+          {[1, 2, 3, 4, 5, 6, 0].map(day => { // Start from Monday (1) to Sunday (0)
+            const dayPlans = plans.filter(p => p.daysOfWeek.includes(day));
+            return (
+              <div key={day} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+                <div className="flex justify-between items-start mb-3">
+                  <h3 className="font-bold text-lg text-emerald-500">{fullDaysMap[day]}</h3>
+                  <button 
+                    onClick={() => onEditDay(day)}
+                    className="text-zinc-500 hover:text-zinc-300 p-2 rounded-full hover:bg-zinc-800 transition-colors"
+                  >
+                    <Pencil size={18} />
+                  </button>
+                </div>
+                {dayPlans.length > 0 ? (
+                  <div className="space-y-2">
+                    {dayPlans.map(plan => (
+                      <div key={plan.id} className="text-zinc-300 text-sm flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50" />
+                        {plan.name}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-zinc-600 text-sm italic">Descanso</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <section>
         <h2 className="text-xl font-semibold mb-4">Todos os Treinos</h2>
         <div className="space-y-4">
           {plans.map(plan => (
@@ -496,6 +564,128 @@ function DashboardView({
           </motion.div>
         )}
       </AnimatePresence>
+    </motion.div>
+  );
+}
+
+// --- Weekly Schedule View ---
+function WeeklyScheduleView({ 
+  day, 
+  allPlans, 
+  availableExercises,
+  onTogglePlanDay, 
+  onBack 
+}: { 
+  day: number, 
+  allPlans: WorkoutPlan[], 
+  availableExercises: Exercise[],
+  onTogglePlanDay: (planId: string, day: number) => void, 
+  onBack: () => void,
+  key?: React.Key
+}) {
+  const fullDaysMap = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+  const dayPlans = allPlans.filter(p => p.daysOfWeek.includes(day));
+
+  const renderExercisesList = (plan: WorkoutPlan) => (
+    <div className="mt-2 space-y-1 pl-1">
+      {plan.exercises.map((ex, idx) => {
+        const exerciseName = availableExercises.find(e => e.id === ex.exerciseId)?.name || 'Exercício desconhecido';
+        return (
+          <div key={ex.id} className="text-xs text-zinc-500 flex items-center gap-2">
+            <span className="text-zinc-600 font-mono w-3 text-right">{idx + 1}.</span>
+            <span>{exerciseName}</span>
+          </div>
+        );
+      })}
+      {plan.exercises.length === 0 && (
+        <div className="text-xs text-zinc-600 italic pl-5">Nenhum exercício</div>
+      )}
+    </div>
+  );
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      className="p-6 min-h-screen bg-zinc-950"
+    >
+      <header className="flex items-center gap-4 mb-8 pt-4">
+        <button 
+          onClick={onBack}
+          className="p-2 bg-zinc-900 rounded-full text-zinc-400 hover:text-white transition-colors"
+        >
+          <ChevronRight className="rotate-180" size={24} />
+        </button>
+        <div>
+          <h1 className="text-2xl font-bold">Editar Agenda</h1>
+          <p className="text-emerald-500 font-medium">{fullDaysMap[day]}</p>
+        </div>
+      </header>
+
+      <div className="space-y-8">
+        <section>
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <CheckCircle2 className="text-emerald-500" size={20} />
+            Treinos do Dia
+          </h2>
+          {dayPlans.length > 0 ? (
+            <div className="space-y-3">
+              {dayPlans.map(plan => (
+                <div key={plan.id} className="bg-zinc-900 border border-emerald-500/30 rounded-xl p-4">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">{plan.name}</span>
+                    <button 
+                      onClick={() => onTogglePlanDay(plan.id, day)}
+                      className="text-red-400 hover:text-red-300 p-2"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
+                  {renderExercisesList(plan)}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-zinc-500 italic p-4 bg-zinc-900/50 rounded-xl border border-zinc-800/50 text-center">
+              Nenhum treino selecionado para este dia.
+            </div>
+          )}
+        </section>
+
+        <section>
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <Dumbbell className="text-zinc-500" size={20} />
+            Todos os Treinos
+          </h2>
+          <div className="space-y-3">
+            {allPlans.map(plan => {
+              const isSelected = plan.daysOfWeek.includes(day);
+              return (
+                <button
+                  key={plan.id}
+                  onClick={() => onTogglePlanDay(plan.id, day)}
+                  className={`w-full text-left p-4 rounded-xl border transition-all ${
+                    isSelected 
+                      ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400' 
+                      : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:border-zinc-700'
+                  }`}
+                >
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">{plan.name}</span>
+                    {isSelected ? (
+                      <CheckCircle2 size={20} className="text-emerald-500" />
+                    ) : (
+                      <PlusCircle size={20} className="text-zinc-600" />
+                    )}
+                  </div>
+                  {renderExercisesList(plan)}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      </div>
     </motion.div>
   );
 }
