@@ -322,8 +322,8 @@ function DashboardView({ plans, sessions, availableExercises, onStartWorkout, on
           <h1 className="text-4xl font-bold tracking-tighter">Iron<span className="text-emerald-500">Track</span></h1>
           <p className="text-zinc-400 mt-2 font-mono text-sm">SUA ROTINA DE FORÇA</p>
         </div>
-        <div className="flex flex-col items-end gap-1">
-          <div className="text-2xl font-bold text-zinc-100 tracking-tight uppercase flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <div className="text-sm font-bold text-zinc-100 tracking-tight uppercase flex items-center gap-2">
             {time.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}
             <span className="text-emerald-500">{time.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
           </div>
