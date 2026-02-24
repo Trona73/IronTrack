@@ -352,6 +352,7 @@ function DashboardView({
   const todaysPlans = plans.filter(p => p.daysOfWeek.includes(today));
   const [time, setTime] = useState(new Date());
   const [showPlanSelector, setShowPlanSelector] = useState(false);
+  const [showPhotoOptions, setShowPhotoOptions] = useState(false);
   const [reactivatedPlans, setReactivatedPlans] = useState<string[]>([]);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const daysMap = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -382,6 +383,11 @@ function DashboardView({
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleRemovePhoto = () => {
+    onUpdateProfile({ ...userProfile, photoUrl: undefined });
+    setShowPhotoOptions(false);
   };
 
   const isPlanCompletedToday = (planId: string) => {
@@ -426,7 +432,13 @@ function DashboardView({
           </div>
           
           <div 
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => {
+              if (userProfile.photoUrl) {
+                setShowPhotoOptions(true);
+              } else {
+                fileInputRef.current?.click();
+              }
+            }}
             className="w-16 h-16 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center overflow-hidden cursor-pointer hover:border-emerald-500 transition-colors"
           >
             {userProfile.photoUrl ? (
@@ -533,6 +545,50 @@ function DashboardView({
           ))}
         </div>
       </section>
+
+      {/* Photo Options Modal */}
+      <AnimatePresence>
+        {showPhotoOptions && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowPhotoOptions(false)}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-xs w-full shadow-xl space-y-3"
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-bold text-center mb-4">Foto de Perfil</h3>
+              <button 
+                onClick={() => {
+                  setShowPhotoOptions(false);
+                  fileInputRef.current?.click();
+                }}
+                className="w-full py-3 rounded-xl font-medium bg-zinc-800 text-zinc-200 hover:bg-zinc-700 transition-colors"
+              >
+                Alterar Foto
+              </button>
+              <button 
+                onClick={handleRemovePhoto}
+                className="w-full py-3 rounded-xl font-medium bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
+              >
+                Remover Foto
+              </button>
+              <button 
+                onClick={() => setShowPhotoOptions(false)}
+                className="w-full py-3 rounded-xl font-medium text-zinc-400 hover:text-zinc-300 transition-colors"
+              >
+                Cancelar
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Plan Selector Modal */}
       <AnimatePresence>
