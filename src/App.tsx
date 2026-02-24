@@ -138,6 +138,10 @@ export default function App() {
     setCurrentView('dashboard');
   };
 
+  const clearHistory = () => {
+    setSessions([]);
+  };
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 font-sans selection:bg-emerald-500/30">
       <main className="pb-24 max-w-md mx-auto min-h-screen relative overflow-hidden">
@@ -207,6 +211,7 @@ export default function App() {
               sessions={sessions} 
               plans={plans}
               availableExercises={exercises}
+              onClearHistory={clearHistory}
             />
           )}
           {currentView === 'exercises' && (
@@ -1484,8 +1489,9 @@ function ActiveWorkoutView({ plan, availableExercises, onFinish, onCancel }: { p
 }
 
 // --- History View ---
-function HistoryView({ sessions, plans, availableExercises }: { sessions: WorkoutSession[], plans: WorkoutPlan[], availableExercises: Exercise[], key?: React.Key }) {
+function HistoryView({ sessions, plans, availableExercises, onClearHistory }: { sessions: WorkoutSession[], plans: WorkoutPlan[], availableExercises: Exercise[], onClearHistory: () => void, key?: React.Key }) {
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
+  const [showClearConfirmation, setShowClearConfirmation] = useState(false);
 
   // Get all unique exercises performed in history
   const performedExerciseIds = Array.from(new Set(
@@ -1512,9 +1518,20 @@ function HistoryView({ sessions, plans, availableExercises }: { sessions: Workou
       exit={{ opacity: 0, y: -20 }}
       className="p-6 pt-12 space-y-4"
     >
-      <header>
-        <h1 className="text-3xl font-bold tracking-tight mb-1">Histórico</h1>
-        <p className="text-zinc-400">Seus treinos concluídos.</p>
+      <header className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight mb-1">Histórico</h1>
+          <p className="text-zinc-400">Seus treinos concluídos.</p>
+        </div>
+        {sessions.length > 0 && (
+          <button 
+            onClick={() => setShowClearConfirmation(true)}
+            className="text-red-500 hover:text-red-400 p-2 rounded-full hover:bg-zinc-800 transition-colors"
+            title="Limpar Histórico"
+          >
+            <Trash2 size={20} />
+          </button>
+        )}
       </header>
 
       {/* Progress Chart Section */}
@@ -1631,6 +1648,46 @@ function HistoryView({ sessions, plans, availableExercises }: { sessions: Workou
           })}
         </div>
       )}
+      {/* Clear History Confirmation Modal */}
+      <AnimatePresence>
+        {showClearConfirmation && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowClearConfirmation(false)}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-sm w-full shadow-xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className="text-xl font-bold mb-2">Limpar Histórico?</h3>
+              <p className="text-zinc-400 mb-6">Esta ação apagará todos os registros de treinos realizados. Esta ação não pode ser desfeita.</p>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setShowClearConfirmation(false)}
+                  className="flex-1 py-3 rounded-xl font-medium text-zinc-300 hover:bg-zinc-800 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={() => {
+                    onClearHistory();
+                    setShowClearConfirmation(false);
+                  }}
+                  className="flex-1 py-3 rounded-xl font-bold bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
+                >
+                  Limpar Tudo
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
