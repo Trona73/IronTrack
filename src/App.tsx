@@ -353,6 +353,8 @@ function DashboardView({
   const [time, setTime] = useState(new Date());
   const [showPlanSelector, setShowPlanSelector] = useState(false);
   const [showPhotoOptions, setShowPhotoOptions] = useState(false);
+  const [isWeeklyExpanded, setIsWeeklyExpanded] = useState(true);
+  const [isAllWorkoutsExpanded, setIsAllWorkoutsExpanded] = useState(true);
   const [reactivatedPlans, setReactivatedPlans] = useState<string[]>([]);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const daysMap = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -497,53 +499,93 @@ function DashboardView({
       </section>
 
       <section>
-        <h2 className="text-xl font-semibold mb-4">Treino da Semana</h2>
-        <div className="grid grid-cols-1 gap-4">
-          {[1, 2, 3, 4, 5, 6, 0].map(day => { // Start from Monday (1) to Sunday (0)
-            const dayPlans = plans.filter(p => p.daysOfWeek.includes(day));
-            return (
-              <div key={day} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
-                <div className="flex justify-between items-start mb-3">
-                  <h3 className="font-bold text-lg text-emerald-500">{fullDaysMap[day]}</h3>
-                  <button 
-                    onClick={() => onEditDay(day)}
-                    className="text-zinc-500 hover:text-zinc-300 p-2 rounded-full hover:bg-zinc-800 transition-colors"
-                  >
-                    <Pencil size={18} />
-                  </button>
-                </div>
-                {dayPlans.length > 0 ? (
-                  <div className="space-y-2">
-                    {dayPlans.map(plan => (
-                      <div key={plan.id} className="text-zinc-300 text-sm flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50" />
-                        {plan.name}
+        <button 
+          onClick={() => setIsWeeklyExpanded(!isWeeklyExpanded)}
+          className="w-full flex items-center justify-between mb-4 group"
+        >
+          <h2 className="text-xl font-semibold">Treino da Semana</h2>
+          <ChevronRight 
+            className={`text-zinc-500 group-hover:text-zinc-300 transition-transform duration-200 ${isWeeklyExpanded ? 'rotate-90' : ''}`} 
+            size={20} 
+          />
+        </button>
+        <AnimatePresence>
+          {isWeeklyExpanded && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="grid grid-cols-1 gap-4">
+                {[1, 2, 3, 4, 5, 6, 0].map(day => { // Start from Monday (1) to Sunday (0)
+                  const dayPlans = plans.filter(p => p.daysOfWeek.includes(day));
+                  return (
+                    <div key={day} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+                      <div className="flex justify-between items-start mb-3">
+                        <h3 className="font-bold text-lg text-emerald-500">{fullDaysMap[day]}</h3>
+                        <button 
+                          onClick={() => onEditDay(day)}
+                          className="text-zinc-500 hover:text-zinc-300 p-2 rounded-full hover:bg-zinc-800 transition-colors"
+                        >
+                          <Pencil size={18} />
+                        </button>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-zinc-600 text-sm italic">Descanso</p>
-                )}
+                      {dayPlans.length > 0 ? (
+                        <div className="space-y-2">
+                          {dayPlans.map(plan => (
+                            <div key={plan.id} className="text-zinc-300 text-sm flex items-center gap-2">
+                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50" />
+                              {plan.name}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-zinc-600 text-sm italic">Descanso</p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
-        </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </section>
 
       <section>
-        <h2 className="text-xl font-semibold mb-4">Todos os Treinos</h2>
-        <div className="space-y-4">
-          {plans.map(plan => (
-            <PlanCard 
-              key={plan.id} 
-              plan={plan} 
-              availableExercises={availableExercises}
-              onStart={() => onStartWorkout(plan)} 
-              onEdit={() => onEditPlan(plan)}
-              onDelete={() => onDeletePlan(plan.id)}
-            />
-          ))}
-        </div>
+        <button 
+          onClick={() => setIsAllWorkoutsExpanded(!isAllWorkoutsExpanded)}
+          className="w-full flex items-center justify-between mb-4 group"
+        >
+          <h2 className="text-xl font-semibold">Todos os Treinos</h2>
+          <ChevronRight 
+            className={`text-zinc-500 group-hover:text-zinc-300 transition-transform duration-200 ${isAllWorkoutsExpanded ? 'rotate-90' : ''}`} 
+            size={20} 
+          />
+        </button>
+        <AnimatePresence>
+          {isAllWorkoutsExpanded && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="space-y-4">
+                {plans.map(plan => (
+                  <PlanCard 
+                    key={plan.id} 
+                    plan={plan} 
+                    availableExercises={availableExercises}
+                    onStart={() => onStartWorkout(plan)} 
+                    onEdit={() => onEditPlan(plan)}
+                    onDelete={() => onDeletePlan(plan.id)}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </section>
 
       {/* Photo Options Modal */}
