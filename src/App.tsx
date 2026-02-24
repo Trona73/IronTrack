@@ -842,7 +842,7 @@ function PlanCard({ plan, availableExercises, onStart, onEdit, onDelete, isCompl
           {isCompleted && onActivate ? (
             <button 
               onClick={onActivate}
-              className="bg-zinc-800 text-zinc-300 p-3 rounded-full hover:bg-zinc-700 hover:text-emerald-400 transition-colors ml-2"
+              className="bg-zinc-800 text-emerald-500 p-3 rounded-full hover:bg-zinc-700 hover:text-emerald-400 transition-colors ml-2"
               title="Repetir Treino"
             >
               <RotateCcw size={20} />
