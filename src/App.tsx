@@ -59,14 +59,20 @@ export default function App() {
 
   // Save to local storage
   useEffect(() => {
-    localStorage.setItem('iron_plans', JSON.stringify(plans));
-    localStorage.setItem('iron_sessions', JSON.stringify(sessions));
-    localStorage.setItem('iron_profile', JSON.stringify(userProfile));
-    localStorage.setItem('iron_muscle_groups', JSON.stringify(muscleGroups));
-    localStorage.setItem('iron_equipment', JSON.stringify(equipmentList));
-    
-    // Save all exercises to v2
-    localStorage.setItem('iron_exercises_v2', JSON.stringify(exercises));
+    try {
+      localStorage.setItem('iron_plans', JSON.stringify(plans));
+      localStorage.setItem('iron_sessions', JSON.stringify(sessions));
+      localStorage.setItem('iron_profile', JSON.stringify(userProfile));
+      localStorage.setItem('iron_muscle_groups', JSON.stringify(muscleGroups));
+      localStorage.setItem('iron_equipment', JSON.stringify(equipmentList));
+      
+      // Save all exercises to v2
+      localStorage.setItem('iron_exercises_v2', JSON.stringify(exercises));
+    } catch (error) {
+      console.error('Failed to save to localStorage:', error);
+      // If quota exceeded, we might want to alert the user or handle it gracefully
+      // For now, just logging to prevent crash
+    }
   }, [plans, sessions, userProfile, exercises, muscleGroups, equipmentList]);
 
   const addExercise = (exercise: Exercise) => {
@@ -354,9 +360,25 @@ function DashboardView({
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Check file size (limit to 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        alert('A imagem é muito grande. Por favor, escolha uma imagem menor que 2MB.');
+        return;
+      }
+
       const reader = new FileReader();
       reader.onloadend = () => {
-        onUpdateProfile({ ...userProfile, photoUrl: reader.result as string });
+        try {
+          const result = reader.result as string;
+          onUpdateProfile({ ...userProfile, photoUrl: result });
+        } catch (error) {
+          console.error('Error updating profile photo:', error);
+          alert('Erro ao processar a imagem. Tente outra.');
+        }
+      };
+      reader.onerror = () => {
+        console.error('FileReader error');
+        alert('Erro ao ler o arquivo.');
       };
       reader.readAsDataURL(file);
     }
