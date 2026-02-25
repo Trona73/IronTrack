@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User, TrendingUp, RotateCcw, BarChart2 } from 'lucide-react';
+import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User, TrendingUp, RotateCcw, BarChart2, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 import { WorkoutPlan, WorkoutSession, Exercise, PlannedExercise, CompletedSet, CompletedExercise, UserProfile, Equipment, MuscleGroup } from './types';
@@ -8,7 +8,7 @@ import { EXERCISES, MOCK_PLANS } from './data';
 const DEFAULT_MUSCLE_GROUPS = ['Peito', 'Costas', 'Pernas', 'Ombros', 'Braços', 'Core', 'Cardio'];
 const DEFAULT_EQUIPMENT = ['Halteres', 'Barra', 'Máquina', 'Peso Corporal', 'Cabos', 'Kettlebell'];
 
-type View = 'dashboard' | 'builder' | 'active' | 'history' | 'profile' | 'exercises' | 'weekly-schedule';
+type View = 'dashboard' | 'builder' | 'active' | 'history' | 'profile' | 'exercises' | 'weekly-schedule' | 'settings';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<View>('dashboard');
@@ -336,7 +336,6 @@ export default function App() {
                   sessions={sessions}
                   availableExercises={exercises}
                   userProfile={userProfile}
-                  onUpdateProfile={setUserProfile}
                   onStartWorkout={startWorkout} 
                   onNewPlan={() => {
                     setPlanToEdit(null);
@@ -348,6 +347,14 @@ export default function App() {
                     setDayToEdit(day);
                     setCurrentView('weekly-schedule');
                   }}
+                  onOpenSettings={() => setCurrentView('settings')}
+                />
+              )}
+
+              {currentView === 'settings' && (
+                <SettingsView 
+                  key="settings"
+                  onBack={() => setCurrentView('dashboard')}
                 />
               )}
               {currentView === 'weekly-schedule' && dayToEdit !== null && (
@@ -521,68 +528,34 @@ function DashboardView({
   sessions, 
   availableExercises, 
   userProfile,
-  onUpdateProfile,
   onStartWorkout, 
   onNewPlan, 
   onEditPlan, 
   onDeletePlan,
-  onEditDay
+  onEditDay,
+  onOpenSettings
 }: { 
   plans: WorkoutPlan[], 
   sessions: WorkoutSession[], 
   availableExercises: Exercise[], 
   userProfile: UserProfile,
-  onUpdateProfile: (p: UserProfile) => void,
   onStartWorkout: (p: WorkoutPlan) => void, 
   onNewPlan: () => void, 
   onEditPlan: (p: WorkoutPlan) => void, 
   onDeletePlan: (id: string) => void, 
   onEditDay: (day: number) => void,
+  onOpenSettings: () => void,
   key?: React.Key 
 }) {
   const today = new Date().getDay();
   const todaysPlans = plans.filter(p => p.daysOfWeek.includes(today));
   const [time, setTime] = useState(new Date());
   const [showPlanSelector, setShowPlanSelector] = useState(false);
-  const [showPhotoOptions, setShowPhotoOptions] = useState(false);
   const [isWeeklyExpanded, setIsWeeklyExpanded] = useState(true);
   const [isAllWorkoutsExpanded, setIsAllWorkoutsExpanded] = useState(true);
   const [reactivatedPlans, setReactivatedPlans] = useState<string[]>([]);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const daysMap = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
   const fullDaysMap = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Check file size (limit to 2MB)
-      if (file.size > 2 * 1024 * 1024) {
-        alert('A imagem é muito grande. Por favor, escolha uma imagem menor que 2MB.');
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        try {
-          const result = reader.result as string;
-          onUpdateProfile({ ...userProfile, photoUrl: result });
-        } catch (error) {
-          console.error('Error updating profile photo:', error);
-          alert('Erro ao processar a imagem. Tente outra.');
-        }
-      };
-      reader.onerror = () => {
-        console.error('FileReader error');
-        alert('Erro ao ler o arquivo.');
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleRemovePhoto = () => {
-    onUpdateProfile({ ...userProfile, photoUrl: undefined });
-    setShowPhotoOptions(false);
-  };
 
   const isPlanCompletedToday = (planId: string) => {
     if (reactivatedPlans.includes(planId)) return false;
@@ -625,31 +598,12 @@ function DashboardView({
             </div>
           </div>
           
-          <div 
-            onClick={() => {
-              if (userProfile.photoUrl) {
-                setShowPhotoOptions(true);
-              } else {
-                fileInputRef.current?.click();
-              }
-            }}
-            className="w-16 h-16 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center overflow-hidden cursor-pointer hover:border-brand-500 transition-colors"
+          <button 
+            onClick={onOpenSettings}
+            className="w-10 h-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center hover:border-brand-500 hover:text-brand-500 transition-colors text-zinc-400"
           >
-            {userProfile.photoUrl ? (
-              <img src={userProfile.photoUrl} alt="Profile" className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-2xl font-bold text-zinc-400">
-                {userProfile.name ? userProfile.name.charAt(0).toUpperCase() : 'U'}
-              </span>
-            )}
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handlePhotoUpload} 
-              accept="image/png, image/jpeg" 
-              className="hidden" 
-            />
-          </div>
+            <Settings size={20} />
+          </button>
         </div>
       </header>
 
@@ -780,49 +734,7 @@ function DashboardView({
         </AnimatePresence>
       </section>
 
-      {/* Photo Options Modal */}
-      <AnimatePresence>
-        {showPhotoOptions && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-            onClick={() => setShowPhotoOptions(false)}
-          >
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-xs w-full shadow-xl space-y-3"
-              onClick={e => e.stopPropagation()}
-            >
-              <h3 className="text-lg font-bold text-center mb-4">Foto de Perfil</h3>
-              <button 
-                onClick={() => {
-                  setShowPhotoOptions(false);
-                  fileInputRef.current?.click();
-                }}
-                className="w-full py-3 rounded-xl font-medium bg-zinc-800 text-zinc-200 hover:bg-zinc-700 transition-colors"
-              >
-                Alterar Foto
-              </button>
-              <button 
-                onClick={handleRemovePhoto}
-                className="w-full py-3 rounded-xl font-medium bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
-              >
-                Remover Foto
-              </button>
-              <button 
-                onClick={() => setShowPhotoOptions(false)}
-                className="w-full py-3 rounded-xl font-medium text-zinc-400 hover:text-zinc-300 transition-colors"
-              >
-                Cancelar
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
 
       {/* Plan Selector Modal */}
       <AnimatePresence>
@@ -1798,6 +1710,49 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory, onGe
     return Math.max(...sets.map(s => s.weight));
   };
 
+  // Calculate stats for new cards
+  const uniqueWorkoutDays = new Set(sessions.map(s => new Date(s.startTime).toDateString())).size;
+
+  const calculateStreak = () => {
+    if (sessions.length === 0) return 0;
+    
+    const sortedDates = [...new Set(sessions.map(s => new Date(s.startTime).toDateString()))]
+      .map(d => new Date(d))
+      .sort((a, b) => b.getTime() - a.getTime()); // Descending
+
+    if (sortedDates.length === 0) return 0;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const lastWorkout = new Date(sortedDates[0]);
+    lastWorkout.setHours(0, 0, 0, 0);
+
+    const diffTime = Math.abs(today.getTime() - lastWorkout.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+    
+    // If last workout was before yesterday, streak is 0
+    if (diffDays > 1) return 0;
+
+    let streak = 1;
+    for (let i = 0; i < sortedDates.length - 1; i++) {
+      const current = sortedDates[i];
+      const next = sortedDates[i + 1];
+      
+      const diff = Math.abs(current.getTime() - next.getTime());
+      const daysDiff = Math.round(diff / (1000 * 60 * 60 * 24));
+
+      if (daysDiff === 1) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    return streak;
+  };
+
+  const currentStreak = calculateStreak();
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -1831,6 +1786,31 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory, onGe
           )}
         </div>
       </header>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 flex flex-col justify-between">
+          <div className="flex items-center gap-2 text-zinc-400 mb-2">
+            <Dumbbell size={18} className="text-brand-500" />
+            <span className="text-xs font-bold uppercase tracking-wider">Treinos Totais</span>
+          </div>
+          <div className="text-3xl font-bold text-white">
+            {uniqueWorkoutDays}
+            <span className="text-sm font-normal text-zinc-500 ml-1">dias</span>
+          </div>
+        </div>
+        
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 flex flex-col justify-between">
+          <div className="flex items-center gap-2 text-zinc-400 mb-2">
+            <TrendingUp size={18} className="text-brand-500" />
+            <span className="text-xs font-bold uppercase tracking-wider">Dias Seguidos</span>
+          </div>
+          <div className="text-3xl font-bold text-white">
+            {currentStreak}
+            <span className="text-sm font-normal text-zinc-500 ml-1">dias</span>
+          </div>
+        </div>
+      </div>
 
       {/* Macro Volume Chart */}
       {muscleChartData.length > 0 && (
@@ -2338,6 +2318,39 @@ function ExercisesView({
           </motion.div>
         )}
       </AnimatePresence>
+    </motion.div>
+  );
+}
+
+// --- Settings View ---
+function SettingsView({ onBack }: { onBack: () => void, key?: React.Key }) {
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="p-6 pt-12 space-y-8 pb-32"
+    >
+      <header className="flex items-center gap-4">
+        <button 
+          onClick={onBack}
+          className="p-2 bg-zinc-800 rounded-full text-zinc-300 hover:text-white hover:bg-zinc-700 transition-colors"
+        >
+          <ChevronRight className="rotate-180" size={20} />
+        </button>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight mb-1">Configurações</h1>
+          <p className="text-zinc-400">Preferências do aplicativo.</p>
+        </div>
+      </header>
+
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center space-y-4">
+        <Settings className="mx-auto text-zinc-600" size={48} />
+        <h3 className="text-xl font-semibold text-zinc-300">Em Breve</h3>
+        <p className="text-zinc-500 max-w-xs mx-auto">
+          Novas opções de personalização e ajustes estarão disponíveis aqui.
+        </p>
+      </div>
     </motion.div>
   );
 }
