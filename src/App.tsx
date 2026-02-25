@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User, TrendingUp, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 import { WorkoutPlan, WorkoutSession, Exercise, PlannedExercise, CompletedSet, CompletedExercise, UserProfile, Equipment, MuscleGroup } from './types';
 import { EXERCISES, MOCK_PLANS } from './data';
 
@@ -28,6 +28,8 @@ export default function App() {
   const [planToEdit, setPlanToEdit] = useState<WorkoutPlan | null>(null);
   const [dayToEdit, setDayToEdit] = useState<number | null>(null);
   const [planToDelete, setPlanToDelete] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showAuth, setShowAuth] = useState(true); // Controls if AuthView is shown
 
   // Load from local storage
   useEffect(() => {
@@ -41,7 +43,31 @@ export default function App() {
 
     if (savedPlans) setPlans(JSON.parse(savedPlans));
     if (savedSessions) setSessions(JSON.parse(savedSessions));
-    if (savedProfile) setUserProfile(JSON.parse(savedProfile));
+    
+    if (savedProfile) {
+      const profile = JSON.parse(savedProfile);
+      setUserProfile(profile);
+      // If profile exists and has email/password, require login
+      if (profile.email && profile.password) {
+        setIsAuthenticated(false);
+        setShowAuth(true);
+      } else {
+        // If no profile or incomplete, treat as new user (or just let them in if it's a legacy user without password)
+        // For this feature request, let's force auth if they have credentials, otherwise show creation
+        if (profile.name) {
+           // Legacy user without password - let them in, but they can add password in profile
+           setIsAuthenticated(true);
+           setShowAuth(false);
+        } else {
+           // New user
+           setIsAuthenticated(false);
+           setShowAuth(true);
+        }
+      }
+    } else {
+      setIsAuthenticated(false);
+      setShowAuth(true);
+    }
     
     if (savedExercisesV2) {
       setExercises(JSON.parse(savedExercisesV2));
@@ -140,6 +166,26 @@ export default function App() {
 
   const clearHistory = () => {
     setSessions([]);
+  };
+
+  const handleLogin = (email: string, pass: string) => {
+    if (userProfile.email === email && userProfile.password === pass) {
+      setIsAuthenticated(true);
+      setShowAuth(false);
+      return true;
+    }
+    return false;
+  };
+
+  const handleCreateAccount = (profile: UserProfile) => {
+    setUserProfile(profile);
+    setIsAuthenticated(true);
+    setShowAuth(false);
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setShowAuth(true);
   };
 
   const generateSimulationData = () => {
@@ -271,33 +317,42 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-50 font-sans selection:bg-emerald-500/30">
+    <div className="min-h-screen bg-zinc-950 text-zinc-50 font-sans selection:bg-brand-500/30">
       <main className="pb-24 max-w-md mx-auto min-h-screen relative overflow-hidden">
         <AnimatePresence mode="wait">
-          {currentView === 'dashboard' && (
-            <DashboardView 
-              key="dashboard" 
-              plans={plans} 
-              sessions={sessions}
-              availableExercises={exercises}
-              userProfile={userProfile}
-              onUpdateProfile={setUserProfile}
-              onStartWorkout={startWorkout} 
-              onNewPlan={() => {
-                setPlanToEdit(null);
-                setCurrentView('builder');
-              }}
-              onEditPlan={editPlan}
-              onDeletePlan={deletePlan}
-              onEditDay={(day) => {
-                setDayToEdit(day);
-                setCurrentView('weekly-schedule');
-              }}
+          {showAuth ? (
+            <AuthView 
+              key="auth"
+              onLogin={handleLogin}
+              onCreateAccount={handleCreateAccount}
+              existingProfile={userProfile}
             />
-          )}
-          {currentView === 'weekly-schedule' && dayToEdit !== null && (
-            <WeeklyScheduleView
-              key="weekly-schedule"
+          ) : (
+            <>
+              {currentView === 'dashboard' && (
+                <DashboardView 
+                  key="dashboard" 
+                  plans={plans} 
+                  sessions={sessions}
+                  availableExercises={exercises}
+                  userProfile={userProfile}
+                  onUpdateProfile={setUserProfile}
+                  onStartWorkout={startWorkout} 
+                  onNewPlan={() => {
+                    setPlanToEdit(null);
+                    setCurrentView('builder');
+                  }}
+                  onEditPlan={editPlan}
+                  onDeletePlan={deletePlan}
+                  onEditDay={(day) => {
+                    setDayToEdit(day);
+                    setCurrentView('weekly-schedule');
+                  }}
+                />
+              )}
+              {currentView === 'weekly-schedule' && dayToEdit !== null && (
+                <WeeklyScheduleView
+                  key="weekly-schedule"
               day={dayToEdit}
               allPlans={plans}
               availableExercises={exercises}
@@ -361,8 +416,11 @@ export default function App() {
               key="profile" 
               profile={userProfile} 
               onSave={setUserProfile}
+              onLogout={handleLogout}
             />
           )}
+          </>
+        )}
         </AnimatePresence>
 
         {/* Confirmation Modal */}
@@ -405,7 +463,7 @@ export default function App() {
       </main>
 
       {/* Bottom Navigation */}
-      {currentView !== 'active' && (
+      {currentView !== 'active' && !showAuth && (
         <nav className="fixed bottom-0 left-0 right-0 bg-zinc-900/80 backdrop-blur-xl border-t border-zinc-800/50 pb-[env(safe-area-inset-bottom)]">
           <div className="max-w-md mx-auto grid grid-cols-5 items-center p-4">
             <NavItem 
@@ -450,7 +508,7 @@ function NavItem({ icon, label, isActive, onClick }: { icon: React.ReactNode, la
     <button 
       onClick={onClick}
       aria-label={label}
-      className={`flex flex-col items-center justify-center gap-1 transition-colors w-full ${isActive ? 'text-emerald-400' : 'text-zinc-500 hover:text-zinc-300'}`}
+      className={`flex flex-col items-center justify-center gap-1 transition-colors w-full ${isActive ? 'text-brand-400' : 'text-zinc-500 hover:text-zinc-300'}`}
     >
       {icon}
     </button>
@@ -552,14 +610,14 @@ function DashboardView({
     >
       <header className="pt-8 flex justify-between items-center">
         <div>
-          <h1 className="text-4xl font-bold tracking-tighter">Iron<span className="text-emerald-500">Track</span></h1>
+          <h1 className="text-4xl font-bold tracking-tighter">Iron<span className="text-brand-500">Track</span></h1>
           <p className="text-zinc-400 mt-2 font-mono text-sm">SUA ROTINA DE FORÇA</p>
         </div>
         <div className="flex items-center gap-6">
           <div className="flex flex-col items-end">
             <div className="text-sm font-bold text-zinc-100 tracking-tight uppercase flex items-center gap-2">
               {time.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}
-              <span className="text-emerald-500">{time.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
+              <span className="text-brand-500">{time.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
             </div>
             <div className="text-xs font-mono text-zinc-500 bg-zinc-900/80 px-2 py-1 rounded-md border border-zinc-800 flex items-center gap-1.5">
               <Clock size={10} />
@@ -575,7 +633,7 @@ function DashboardView({
                 fileInputRef.current?.click();
               }
             }}
-            className="w-16 h-16 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center overflow-hidden cursor-pointer hover:border-emerald-500 transition-colors"
+            className="w-16 h-16 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center overflow-hidden cursor-pointer hover:border-brand-500 transition-colors"
           >
             {userProfile.photoUrl ? (
               <img src={userProfile.photoUrl} alt="Profile" className="w-full h-full object-cover" />
@@ -598,7 +656,7 @@ function DashboardView({
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold flex items-center gap-2">
-            <Calendar className="text-emerald-500" size={20} />
+            <Calendar className="text-brand-500" size={20} />
             Treino de Hoje
           </h2>
         </div>
@@ -657,7 +715,7 @@ function DashboardView({
                   return (
                     <div key={day} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
                       <div className="flex justify-between items-start mb-3">
-                        <h3 className="font-bold text-lg text-emerald-500">{fullDaysMap[day]}</h3>
+                        <h3 className="font-bold text-lg text-brand-500">{fullDaysMap[day]}</h3>
                         <button 
                           onClick={() => onEditDay(day)}
                           className="text-zinc-500 hover:text-zinc-300 p-2 rounded-full hover:bg-zinc-800 transition-colors"
@@ -669,7 +727,7 @@ function DashboardView({
                         <div className="space-y-2">
                           {dayPlans.map(plan => (
                             <div key={plan.id} className="text-zinc-300 text-sm flex items-center gap-2">
-                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50" />
+                              <div className="w-1.5 h-1.5 rounded-full bg-brand-500/50" />
                               {plan.name}
                             </div>
                           ))}
@@ -799,13 +857,13 @@ function DashboardView({
                         onStartWorkout(plan);
                         setShowPlanSelector(false);
                       }}
-                      className="w-full flex items-center justify-between bg-zinc-950 border border-zinc-800 p-4 rounded-xl hover:border-emerald-500/50 transition-colors text-left group"
+                      className="w-full flex items-center justify-between bg-zinc-950 border border-zinc-800 p-4 rounded-xl hover:border-brand-500/50 transition-colors text-left group"
                     >
                       <div>
-                        <div className="font-semibold group-hover:text-emerald-400 transition-colors">{plan.name}</div>
+                        <div className="font-semibold group-hover:text-brand-400 transition-colors">{plan.name}</div>
                         <div className="text-xs text-zinc-500 font-mono mt-1">{plan.exercises.length} exercícios</div>
                       </div>
-                      <Play className="text-zinc-500 group-hover:text-emerald-500" size={20} />
+                      <Play className="text-zinc-500 group-hover:text-brand-500" size={20} />
                     </button>
                   ))
                 ) : (
@@ -873,20 +931,20 @@ function WeeklyScheduleView({
         </button>
         <div>
           <h1 className="text-2xl font-bold">Editar Agenda</h1>
-          <p className="text-emerald-500 font-medium">{fullDaysMap[day]}</p>
+          <p className="text-brand-500 font-medium">{fullDaysMap[day]}</p>
         </div>
       </header>
 
       <div className="space-y-8">
         <section>
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <CheckCircle2 className="text-emerald-500" size={20} />
+            <CheckCircle2 className="text-brand-500" size={20} />
             Treinos do Dia
           </h2>
           {dayPlans.length > 0 ? (
             <div className="space-y-3">
               {dayPlans.map(plan => (
-                <div key={plan.id} className="bg-zinc-900 border border-emerald-500/30 rounded-xl p-4">
+                <div key={plan.id} className="bg-zinc-900 border border-brand-500/30 rounded-xl p-4">
                   <div className="flex justify-between items-center">
                     <span className="font-medium">{plan.name}</span>
                     <button 
@@ -921,14 +979,14 @@ function WeeklyScheduleView({
                   onClick={() => onTogglePlanDay(plan.id, day)}
                   className={`w-full text-left p-4 rounded-xl border transition-all ${
                     isSelected 
-                      ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400' 
+                      ? 'bg-brand-500/10 border-brand-500/50 text-brand-400' 
                       : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:border-zinc-700'
                   }`}
                 >
                   <div className="flex justify-between items-center">
                     <span className="font-medium">{plan.name}</span>
                     {isSelected ? (
-                      <CheckCircle2 size={20} className="text-emerald-500" />
+                      <CheckCircle2 size={20} className="text-brand-500" />
                     ) : (
                       <PlusCircle size={20} className="text-zinc-600" />
                     )}
@@ -948,7 +1006,7 @@ function PlanCard({ plan, availableExercises, onStart, onEdit, onDelete, isCompl
   const daysMap = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
   
   return (
-    <div className={`bg-zinc-900 border border-zinc-800 rounded-2xl p-5 transition-colors group relative ${isCompleted ? 'opacity-50' : 'hover:border-emerald-500/30'}`}>
+    <div className={`bg-zinc-900 border border-zinc-800 rounded-2xl p-5 transition-colors group relative ${isCompleted ? 'opacity-50' : 'hover:border-brand-500/30'}`}>
       <div className="flex justify-between items-start mb-4">
         <div>
           <h3 className={`font-bold text-lg ${isCompleted ? 'line-through decoration-zinc-500' : ''}`}>{plan.name}</h3>
@@ -976,7 +1034,7 @@ function PlanCard({ plan, availableExercises, onStart, onEdit, onDelete, isCompl
           {isCompleted && onActivate ? (
             <button 
               onClick={onActivate}
-              className="bg-zinc-800 text-emerald-500 p-3 rounded-full hover:bg-zinc-700 hover:text-emerald-400 transition-colors ml-2"
+              className="bg-zinc-800 text-brand-500 p-3 rounded-full hover:bg-zinc-700 hover:text-brand-400 transition-colors ml-2"
               title="Repetir Treino"
             >
               <RotateCcw size={20} />
@@ -984,7 +1042,7 @@ function PlanCard({ plan, availableExercises, onStart, onEdit, onDelete, isCompl
           ) : (
             <button 
               onClick={onStart}
-              className="bg-emerald-500 text-zinc-950 p-3 rounded-full hover:bg-emerald-400 transition-transform active:scale-95 ml-2"
+              className="bg-brand-500 text-zinc-950 p-3 rounded-full hover:bg-brand-400 transition-transform active:scale-95 ml-2"
             >
               <Play size={20} className="fill-current" />
             </button>
@@ -1111,7 +1169,7 @@ function BuilderView({
             <select 
               value={filterMuscle}
               onChange={e => setFilterMuscle(e.target.value)}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-sm focus:outline-none focus:border-brand-500 transition-colors appearance-none"
             >
               <option value="Todos">Todos</option>
               {availableMuscleGroups.map(m => (
@@ -1124,7 +1182,7 @@ function BuilderView({
             <select 
               value={filterEquipment}
               onChange={e => setFilterEquipment(e.target.value)}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-sm focus:outline-none focus:border-brand-500 transition-colors appearance-none"
             >
               <option value="Todos">Todos</option>
               {availableEquipment.map(e => (
@@ -1147,13 +1205,13 @@ function BuilderView({
                 setFilterMuscle('Todos');
                 setFilterEquipment('Todos');
               }}
-              className="w-full flex items-center justify-between bg-zinc-900 border border-zinc-800 p-4 rounded-xl hover:border-emerald-500/50 transition-colors text-left"
+              className="w-full flex items-center justify-between bg-zinc-900 border border-zinc-800 p-4 rounded-xl hover:border-brand-500/50 transition-colors text-left"
             >
               <div>
                 <div className="font-semibold">{ex.name}</div>
                 <div className="text-xs text-zinc-500 font-mono mt-1">{ex.muscleGroup} • {ex.equipment}</div>
               </div>
-              <PlusCircle className="text-emerald-500" size={20} />
+              <PlusCircle className="text-brand-500" size={20} />
             </button>
           ))}
           {availableExercises.filter(ex => (filterMuscle === 'Todos' || ex.muscleGroup === filterMuscle) && 
@@ -1187,7 +1245,7 @@ function BuilderView({
             value={name}
             onChange={e => setName(e.target.value)}
             placeholder="Ex: Treino A - Peito"
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-lg focus:outline-none focus:border-emerald-500 transition-colors"
+            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-lg focus:outline-none focus:border-brand-500 transition-colors"
           />
         </div>
 
@@ -1199,7 +1257,7 @@ function BuilderView({
                 key={i}
                 onClick={() => toggleDay(i)}
                 className={`w-10 h-10 rounded-full font-medium flex items-center justify-center transition-colors ${
-                  days.includes(i) ? 'bg-emerald-500 text-zinc-950' : 'bg-zinc-900 text-zinc-400 border border-zinc-800'
+                  days.includes(i) ? 'bg-brand-500 text-zinc-950' : 'bg-zinc-900 text-zinc-400 border border-zinc-800'
                 }`}
               >
                 {d}
@@ -1213,7 +1271,7 @@ function BuilderView({
             <label className="block text-xs font-mono text-zinc-500 uppercase tracking-wider">Exercícios</label>
             <button 
               onClick={() => setShowExercisePicker(true)}
-              className="text-emerald-400 text-sm font-medium flex items-center gap-1"
+              className="text-brand-400 text-sm font-medium flex items-center gap-1"
             >
               <PlusCircle size={16} /> Adicionar
             </button>
@@ -1252,13 +1310,13 @@ function BuilderView({
                           type="number" 
                           value={set.reps || ''}
                           onChange={e => updateSet(ex.id, sIdx, 'reps', parseInt(e.target.value) || 0)}
-                          className="w-full min-w-0 bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800 focus:outline-none focus:border-emerald-500"
+                          className="w-full min-w-0 bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800 focus:outline-none focus:border-brand-500"
                         />
                         <input 
                           type="number" 
                           value={set.weight || ''}
                           onChange={e => updateSet(ex.id, sIdx, 'weight', parseInt(e.target.value) || 0)}
-                          className="w-full min-w-0 bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800 focus:outline-none focus:border-emerald-500"
+                          className="w-full min-w-0 bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800 focus:outline-none focus:border-brand-500"
                         />
                         <button onClick={() => removeSet(ex.id, sIdx)} className="text-zinc-600 hover:text-red-400 p-1 flex justify-center items-center h-full w-full">
                           <X size={16} />
@@ -1267,7 +1325,7 @@ function BuilderView({
                     ))}
                     <button 
                       onClick={() => addSet(ex.id)}
-                      className="w-full mt-2 py-2 border border-dashed border-zinc-700 rounded-lg text-xs font-medium text-zinc-400 hover:text-emerald-400 hover:border-emerald-500/50 transition-colors"
+                      className="w-full mt-2 py-2 border border-dashed border-zinc-700 rounded-lg text-xs font-medium text-zinc-400 hover:text-brand-400 hover:border-brand-500/50 transition-colors"
                     >
                       + Adicionar Série
                     </button>
@@ -1287,7 +1345,7 @@ function BuilderView({
       <button 
         onClick={handleSave}
         disabled={!name.trim() || exercises.length === 0}
-        className="w-full bg-emerald-500 text-zinc-950 py-4 rounded-xl font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        className="w-full bg-brand-500 text-zinc-950 py-4 rounded-xl font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         <Save size={20} />
         Salvar Treino
@@ -1340,9 +1398,9 @@ function ListManager({ title, items, onUpdate, onClose }: { title: string, items
             value={newItem}
             onChange={e => setNewItem(e.target.value)}
             placeholder={`Novo ${title}`}
-            className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl p-3 focus:outline-none focus:border-emerald-500"
+            className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl p-3 focus:outline-none focus:border-brand-500"
           />
-          <button onClick={handleAdd} className="bg-emerald-500 text-zinc-950 p-3 rounded-xl">
+          <button onClick={handleAdd} className="bg-brand-500 text-zinc-950 p-3 rounded-xl">
             <PlusCircle size={20} />
           </button>
         </div>
@@ -1356,10 +1414,10 @@ function ListManager({ title, items, onUpdate, onClose }: { title: string, items
                     type="text"
                     value={editValue}
                     onChange={e => setEditValue(e.target.value)}
-                    className="flex-1 bg-zinc-900 rounded-lg p-2 text-sm focus:outline-none focus:border-emerald-500"
+                    className="flex-1 bg-zinc-900 rounded-lg p-2 text-sm focus:outline-none focus:border-brand-500"
                     autoFocus
                   />
-                  <button onClick={() => handleUpdate(index)} className="text-emerald-500 p-2"><CheckCircle2 size={18} /></button>
+                  <button onClick={() => handleUpdate(index)} className="text-brand-500 p-2"><CheckCircle2 size={18} /></button>
                   <button onClick={() => setEditingIndex(null)} className="text-zinc-500 p-2"><X size={18} /></button>
                 </>
               ) : (
@@ -1482,10 +1540,10 @@ function ActiveWorkoutView({ plan, availableExercises, onFinish, onCancel }: { p
           <button onClick={onCancel} className="text-zinc-400 hover:text-white">
             <X size={24} />
           </button>
-          <div className="font-mono text-xl font-bold text-emerald-400 tracking-wider">
+          <div className="font-mono text-xl font-bold text-brand-400 tracking-wider">
             {formatTime(elapsed)}
           </div>
-          <button onClick={finishExercise} className="text-emerald-500 text-sm font-bold">
+          <button onClick={finishExercise} className="text-brand-500 text-sm font-bold">
             PULAR
           </button>
         </div>
@@ -1493,7 +1551,7 @@ function ActiveWorkoutView({ plan, availableExercises, onFinish, onCancel }: { p
         {/* Progress Bar */}
         <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
           <div 
-            className="h-full bg-emerald-500 transition-all duration-500 ease-out"
+            className="h-full bg-brand-500 transition-all duration-500 ease-out"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -1520,13 +1578,13 @@ function ActiveWorkoutView({ plan, availableExercises, onFinish, onCancel }: { p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="bg-emerald-950/30 border border-emerald-500/30 rounded-2xl p-6 mb-8 text-center"
+              className="bg-brand-950/30 border border-brand-500/30 rounded-2xl p-6 mb-8 text-center"
             >
-              <div className="text-emerald-500 font-mono text-sm mb-2 uppercase tracking-widest">Descanso</div>
-              <div className="text-5xl font-bold font-mono text-emerald-400 mb-4">{formatTime(restTime)}</div>
+              <div className="text-brand-500 font-mono text-sm mb-2 uppercase tracking-widest">Descanso</div>
+              <div className="text-5xl font-bold font-mono text-brand-400 mb-4">{formatTime(restTime)}</div>
               <button 
                 onClick={() => setIsResting(false)}
-                className="bg-emerald-500/20 text-emerald-400 px-6 py-2 rounded-full text-sm font-bold hover:bg-emerald-500/30 transition-colors"
+                className="bg-brand-500/20 text-brand-400 px-6 py-2 rounded-full text-sm font-bold hover:bg-brand-500/30 transition-colors"
               >
                 PRÓXIMA SÉRIE
               </button>
@@ -1553,7 +1611,7 @@ function ActiveWorkoutView({ plan, availableExercises, onFinish, onCancel }: { p
                 key={idx} 
                 className={`grid grid-cols-[auto_1fr_1fr_auto] gap-4 items-center p-3 rounded-xl border transition-colors ${
                   isCompleted ? 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500' : 
-                  isCurrent ? 'bg-zinc-900 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.1)]' : 
+                  isCurrent ? 'bg-zinc-900 border-brand-500/50 shadow-[0_0_15px_rgba(255,178,0,0.1)]' : 
                   'bg-zinc-900/30 border-zinc-800/30 text-zinc-600'
                 }`}
               >
@@ -1566,7 +1624,7 @@ function ActiveWorkoutView({ plan, availableExercises, onFinish, onCancel }: { p
                   <span className="text-xs ml-1 opacity-50">kg</span>
                 </div>
                 <div className="w-6 flex justify-center">
-                  {isCompleted && <CheckCircle2 size={18} className="text-emerald-500" />}
+                  {isCompleted && <CheckCircle2 size={18} className="text-brand-500" />}
                 </div>
               </div>
             );
@@ -1597,7 +1655,7 @@ function ActiveWorkoutView({ plan, availableExercises, onFinish, onCancel }: { p
             
             <button 
               onClick={completeSet}
-              className="w-full bg-emerald-500 text-zinc-950 py-4 rounded-2xl font-bold text-xl active:scale-[0.98] transition-transform shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+              className="w-full bg-brand-500 text-zinc-950 py-4 rounded-2xl font-bold text-xl active:scale-[0.98] transition-transform shadow-[0_0_20px_rgba(255,178,0,0.3)]"
             >
               CONCLUIR SÉRIE
             </button>
@@ -1607,7 +1665,7 @@ function ActiveWorkoutView({ plan, availableExercises, onFinish, onCancel }: { p
         {isLastSet && !isResting && (
           <button 
             onClick={finishExercise}
-            className="w-full bg-emerald-500 text-zinc-950 py-4 rounded-2xl font-bold text-xl active:scale-[0.98] transition-transform shadow-[0_0_20px_rgba(16,185,129,0.3)] mb-[env(safe-area-inset-bottom)]"
+            className="w-full bg-brand-500 text-zinc-950 py-4 rounded-2xl font-bold text-xl active:scale-[0.98] transition-transform shadow-[0_0_20px_rgba(255,178,0,0.3)] mb-[env(safe-area-inset-bottom)]"
           >
             {isLastExercise ? 'FINALIZAR TREINO' : 'PRÓXIMO EXERCÍCIO'}
           </button>
@@ -1621,9 +1679,85 @@ function ActiveWorkoutView({ plan, availableExercises, onFinish, onCancel }: { p
 function HistoryView({ sessions, plans, availableExercises, onClearHistory, onGenerateSimulation }: { sessions: WorkoutSession[], plans: WorkoutPlan[], availableExercises: Exercise[], onClearHistory: () => void, onGenerateSimulation: () => void, key?: React.Key }) {
   const [showClearConfirmation, setShowClearConfirmation] = useState(false);
   const [expandedExerciseId, setExpandedExerciseId] = useState<string | null>(null);
+  const [selectedMuscleGroup, setSelectedMuscleGroup] = useState<string | null>(null);
+
+  // --- Helper: Map Exercise to Fixed Categories ---
+  const getDetailedMuscleGroup = (exercise: Exercise): string => {
+    const name = exercise.name.toLowerCase();
+    const group = exercise.muscleGroup;
+
+    if (group === 'Braços') {
+      if (name.includes('tríceps') || name.includes('testa') || name.includes('frances')) return 'Tríceps';
+      if (name.includes('rosca') || name.includes('bíceps')) return 'Bíceps';
+      return 'Bíceps'; // Default fallback
+    }
+    if (group === 'Pernas') {
+      if (name.includes('flexora') || name.includes('stiff') || name.includes('posterior')) return 'Posteriores';
+      return 'Quadríceps'; // Default for squats, leg press, extensora
+    }
+    return group;
+  };
 
   // --- Data Preparation ---
-  // Group all completed exercises by exerciseId
+  // 1. Calculate Sets per Muscle Group (Last 30 Days) & Top Equipment
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  
+  const muscleStats: Record<string, { sets: number, equipmentCounts: Record<string, number> }> = {
+    'Peito': { sets: 0, equipmentCounts: {} }, 
+    'Costas': { sets: 0, equipmentCounts: {} }, 
+    'Quadríceps': { sets: 0, equipmentCounts: {} }, 
+    'Posteriores': { sets: 0, equipmentCounts: {} }, 
+    'Ombros': { sets: 0, equipmentCounts: {} }, 
+    'Bíceps': { sets: 0, equipmentCounts: {} }, 
+    'Tríceps': { sets: 0, equipmentCounts: {} }, 
+    'Core': { sets: 0, equipmentCounts: {} }
+  };
+
+  sessions.forEach(session => {
+    const sessionDate = new Date(session.startTime);
+    if (sessionDate >= thirtyDaysAgo) {
+      session.exercises.forEach(ex => {
+        const exerciseDef = availableExercises.find(e => e.id === ex.exerciseId);
+        if (exerciseDef) {
+          const group = getDetailedMuscleGroup(exerciseDef);
+          const setsCount = ex.sets.length;
+          
+          if (muscleStats[group]) {
+            muscleStats[group].sets += setsCount;
+            const equip = exerciseDef.equipment;
+            muscleStats[group].equipmentCounts[equip] = (muscleStats[group].equipmentCounts[equip] || 0) + setsCount;
+          }
+        }
+      });
+    }
+  });
+
+  const muscleChartData = Object.entries(muscleStats).map(([name, stats]) => {
+    let topEquip = '-';
+    let maxCount = 0;
+    Object.entries(stats.equipmentCounts).forEach(([equip, count]) => {
+      if (count > maxCount) {
+        maxCount = count;
+        topEquip = equip;
+      }
+    });
+
+    return {
+      name,
+      sets: stats.sets,
+      topEquipment: topEquip
+    };
+  }).filter(d => d.sets > 0);
+
+  // Sort by sets descending
+  muscleChartData.sort((a, b) => b.sets - a.sets);
+
+  const avgSets = muscleChartData.length > 0 
+    ? muscleChartData.reduce((acc, d) => acc + d.sets, 0) / muscleChartData.length 
+    : 0;
+
+  // 2. Group all completed exercises by exerciseId
   const exerciseHistory: Record<string, { date: Date, sets: CompletedSet[] }[]> = {};
 
   sessions.forEach(session => {
@@ -1644,7 +1778,15 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory, onGe
   });
 
   // Get list of exercises that have history
-  const exercisesWithHistory = Object.keys(exerciseHistory);
+  let exercisesWithHistory = Object.keys(exerciseHistory);
+
+  // Filter by selected muscle group
+  if (selectedMuscleGroup) {
+    exercisesWithHistory = exercisesWithHistory.filter(exId => {
+      const exerciseDef = availableExercises.find(e => e.id === exId);
+      return exerciseDef && getDetailedMuscleGroup(exerciseDef) === selectedMuscleGroup;
+    });
+  }
 
   // Helper to calculate total volume of a session
   const calculateVolume = (sets: CompletedSet[]) => {
@@ -1672,7 +1814,7 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory, onGe
           {sessions.length === 0 && (
             <button 
               onClick={onGenerateSimulation}
-              className="text-emerald-500 hover:text-emerald-400 p-2 rounded-full hover:bg-zinc-800 transition-colors"
+              className="text-brand-500 hover:text-brand-400 p-2 rounded-full hover:bg-zinc-800 transition-colors"
               title="Gerar Simulação"
             >
               <Play size={20} />
@@ -1689,6 +1831,87 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory, onGe
           )}
         </div>
       </header>
+
+      {/* Macro Volume Chart */}
+      {muscleChartData.length > 0 && (
+        <section className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="font-bold text-lg flex items-center gap-2">
+              <Activity size={18} className="text-brand-500" />
+              Volume de Séries (Sets)
+            </h2>
+            {selectedMuscleGroup && (
+              <button 
+                onClick={() => setSelectedMuscleGroup(null)}
+                className="text-xs text-zinc-400 hover:text-white flex items-center gap-1 bg-zinc-800 px-2 py-1 rounded-full"
+              >
+                <X size={12} /> Limpar Filtro
+              </button>
+            )}
+          </div>
+          <div className="h-80 w-full overflow-x-auto" style={{ minHeight: '320px', position: 'relative' }}>
+            <div style={{ width: '100%', height: '100%', minWidth: '300px' }}>
+              <BarChart 
+                width={350}
+                height={320}
+                layout="vertical" 
+                data={muscleChartData} 
+                margin={{ top: 5, right: 40, left: 10, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" horizontal={false} />
+                <XAxis type="number" hide />
+                <YAxis 
+                  type="category" 
+                  dataKey="name" 
+                  stroke="#a1a1aa" 
+                  fontSize={12} 
+                  fontWeight={600}
+                  tickLine={false} 
+                  axisLine={false} 
+                  width={80}
+                  tick={({ x, y, payload }) => {
+                    const data = muscleChartData.find(d => d.name === payload.value);
+                    const equip = data?.topEquipment || '';
+                    let equipShort = '';
+                    if (equip.includes('Barra')) equipShort = 'Barra';
+                    else if (equip.includes('Halter')) equipShort = 'Halter';
+                    else if (equip.includes('Máquina')) equipShort = 'Máq.';
+                    else if (equip.includes('Cabo')) equipShort = 'Cabo';
+                    else if (equip.includes('Corporal')) equipShort = 'Corp.';
+                    
+                    return (
+                      <g transform={`translate(${x},${y})`}>
+                        <text x={-12} y={0} dy={-4} textAnchor="end" fill="#e4e4e7" fontSize={12} fontWeight={600}>
+                          {payload.value}
+                        </text>
+                        {equipShort && (
+                          <text x={-12} y={0} dy={8} textAnchor="end" fill="#71717a" fontSize={9} fontStyle="italic">
+                            {equipShort}
+                          </text>
+                        )}
+                      </g>
+                    );
+                  }}
+                />
+                <Bar dataKey="sets" radius={[0, 4, 4, 0]} barSize={24} onClick={(data) => setSelectedMuscleGroup(data.name === selectedMuscleGroup ? null : data.name)} style={{ cursor: 'pointer' }}>
+                  {muscleChartData.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={entry.sets < avgSets * 0.5 ? '#f59e0b' : (selectedMuscleGroup === entry.name ? '#FFB200' : '#3f3f46')} 
+                    />
+                  ))}
+                  <LabelList dataKey="sets" position="right" fill="#e4e4e7" fontSize={12} fontWeight="bold" formatter={(val: number) => `${val}`} />
+                </Bar>
+              </BarChart>
+            </div>
+          </div>
+          <div className="mt-2 flex items-center justify-center gap-4 text-[10px] text-zinc-500">
+            <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-zinc-700"></div>Normal</div>
+            <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-amber-500"></div>Atenção (&lt;50% média)</div>
+            <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-brand-500"></div>Selecionado</div>
+          </div>
+        </section>
+      )}
 
       {exercisesWithHistory.length === 0 ? (
          <div className="text-center py-10 text-zinc-500 italic">
@@ -1729,7 +1952,7 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory, onGe
                     <div className="flex flex-col items-end">
                       <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-mono">VOL Δ</span>
                       {previousSession ? (
-                        <div className={`font-mono font-bold text-sm flex items-center gap-1 ${volumeDelta > 0 ? 'text-emerald-500' : volumeDelta < 0 ? 'text-red-500' : 'text-zinc-500'}`}>
+                        <div className={`font-mono font-bold text-sm flex items-center gap-1 ${volumeDelta > 0 ? 'text-brand-500' : volumeDelta < 0 ? 'text-red-500' : 'text-zinc-500'}`}>
                           {volumeDelta > 0 ? <TrendingUp size={14} /> : volumeDelta < 0 ? <TrendingUp size={14} className="rotate-180" /> : null}
                           {volumeDelta > 0 ? '+' : ''}{volumeDelta}
                         </div>
@@ -1775,7 +1998,7 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory, onGe
                                   <td className="py-2">{entry.date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</td>
                                   <td className="py-2 text-center">{maxWeight}kg</td>
                                   <td className="py-2 text-center">{totalReps}</td>
-                                  <td className={`py-2 text-right font-bold ${delta > 0 ? 'text-emerald-500' : delta < 0 ? 'text-red-500' : 'text-zinc-600'}`}>
+                                  <td className={`py-2 text-right font-bold ${delta > 0 ? 'text-brand-500' : delta < 0 ? 'text-red-500' : 'text-zinc-600'}`}>
                                     {prevEntry ? (delta > 0 ? `+${delta}` : delta) : '-'}
                                   </td>
                                 </tr>
@@ -1924,7 +2147,7 @@ function ExercisesView({
         {!showCreate && (
           <button 
             onClick={() => setShowCreate(true)}
-            className="p-3 bg-emerald-500 rounded-full text-zinc-950 hover:bg-emerald-400 transition-colors"
+            className="p-3 bg-brand-500 rounded-full text-zinc-950 hover:bg-brand-400 transition-colors"
           >
             <PlusCircle size={24} />
           </button>
@@ -1947,19 +2170,19 @@ function ExercisesView({
               value={newExerciseName}
               onChange={e => setNewExerciseName(e.target.value)}
               placeholder="Ex: Agachamento Búlgaro"
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-lg focus:outline-none focus:border-emerald-500 transition-colors"
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-lg focus:outline-none focus:border-brand-500 transition-colors"
             />
           </div>
 
           <div>
             <div className="flex justify-between items-center mb-2">
               <label className="block text-xs font-mono text-zinc-500 uppercase tracking-wider">Grupo Muscular</label>
-              <button onClick={() => setManagingList('muscle')} className="text-xs text-emerald-500 font-medium hover:text-emerald-400">Gerenciar</button>
+              <button onClick={() => setManagingList('muscle')} className="text-xs text-brand-500 font-medium hover:text-brand-400">Gerenciar</button>
             </div>
             <select 
               value={newExerciseMuscle}
               onChange={e => setNewExerciseMuscle(e.target.value)}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-lg focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-lg focus:outline-none focus:border-brand-500 transition-colors appearance-none"
             >
               {muscleGroups.map(m => (
                 <option key={m} value={m}>{m}</option>
@@ -1970,12 +2193,12 @@ function ExercisesView({
           <div>
             <div className="flex justify-between items-center mb-2">
               <label className="block text-xs font-mono text-zinc-500 uppercase tracking-wider">Equipamento</label>
-              <button onClick={() => setManagingList('equipment')} className="text-xs text-emerald-500 font-medium hover:text-emerald-400">Gerenciar</button>
+              <button onClick={() => setManagingList('equipment')} className="text-xs text-brand-500 font-medium hover:text-brand-400">Gerenciar</button>
             </div>
             <select 
               value={newExerciseEquipment}
               onChange={e => setNewExerciseEquipment(e.target.value)}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-lg focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-lg focus:outline-none focus:border-brand-500 transition-colors appearance-none"
             >
               {equipmentList.map(e => (
                 <option key={e} value={e}>{e}</option>
@@ -1986,7 +2209,7 @@ function ExercisesView({
           <button 
             onClick={handleCreateExercise}
             disabled={!newExerciseName.trim()}
-            className="w-full bg-emerald-500 text-zinc-950 py-4 rounded-xl font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full bg-brand-500 text-zinc-950 py-4 rounded-xl font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             <Save size={20} />
             Salvar
@@ -2001,7 +2224,7 @@ function ExercisesView({
               <select 
                 value={filterMuscle}
                 onChange={e => setFilterMuscle(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-sm focus:outline-none focus:border-brand-500 transition-colors appearance-none"
               >
                 <option value="Todos">Todos</option>
                 {muscleGroups.map(m => (
@@ -2014,7 +2237,7 @@ function ExercisesView({
               <select 
                 value={filterEquipment}
                 onChange={e => setFilterEquipment(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-sm focus:outline-none focus:border-brand-500 transition-colors appearance-none"
               >
                 <option value="Todos">Todos</option>
                 {equipmentList.map(e => (
@@ -2120,9 +2343,10 @@ function ExercisesView({
 }
 
 // --- Profile View ---
-function ProfileView({ profile, onSave }: { profile: UserProfile, onSave: (p: UserProfile) => void, key?: React.Key }) {
+function ProfileView({ profile, onSave, onLogout }: { profile: UserProfile, onSave: (p: UserProfile) => void, onLogout: () => void, key?: React.Key }) {
   const [localProfile, setLocalProfile] = useState(profile);
   const [isEditing, setIsEditing] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (field: keyof UserProfile, value: string | number) => {
     setLocalProfile(prev => ({ ...prev, [field]: value }));
@@ -2138,7 +2362,7 @@ function ProfileView({ profile, onSave }: { profile: UserProfile, onSave: (p: Us
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="p-6 pt-12 space-y-8"
+      className="p-6 pt-12 space-y-8 pb-32"
     >
       <header className="flex justify-between items-center">
         <div>
@@ -2165,7 +2389,7 @@ function ProfileView({ profile, onSave }: { profile: UserProfile, onSave: (p: Us
             </button>
             <button 
               onClick={handleSave}
-              className="p-2 bg-emerald-500 rounded-full text-zinc-950 hover:bg-emerald-400 transition-colors"
+              className="p-2 bg-brand-500 rounded-full text-zinc-950 hover:bg-brand-400 transition-colors"
             >
               <Save size={20} />
             </button>
@@ -2182,13 +2406,50 @@ function ProfileView({ profile, onSave }: { profile: UserProfile, onSave: (p: Us
                 type="text" 
                 value={localProfile.name}
                 onChange={e => handleChange('name', e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-emerald-500 transition-colors"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors"
                 placeholder="Seu nome"
               />
             ) : (
               <div className="text-xl font-medium">{profile.name || 'Não informado'}</div>
             )}
           </div>
+
+          <div>
+            <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Email</label>
+            {isEditing ? (
+              <input 
+                type="email" 
+                value={localProfile.email || ''}
+                onChange={e => handleChange('email', e.target.value)}
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors"
+                placeholder="seu@email.com"
+              />
+            ) : (
+              <div className="text-xl font-medium">{profile.email || '-'}</div>
+            )}
+          </div>
+
+          {isEditing && (
+            <div>
+              <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Senha</label>
+              <div className="relative">
+                <input 
+                  type={showPassword ? "text" : "password"}
+                  value={localProfile.password || ''}
+                  onChange={e => handleChange('password', e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors pr-10"
+                  placeholder="Nova senha"
+                />
+                <button 
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+                >
+                  {showPassword ? "Ocultar" : "Mostrar"}
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -2198,7 +2459,7 @@ function ProfileView({ profile, onSave }: { profile: UserProfile, onSave: (p: Us
                   type="number" 
                   value={localProfile.weight || ''}
                   onChange={e => handleChange('weight', parseFloat(e.target.value) || 0)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors"
                   placeholder="0.0"
                 />
               ) : (
@@ -2212,7 +2473,7 @@ function ProfileView({ profile, onSave }: { profile: UserProfile, onSave: (p: Us
                   type="number" 
                   value={localProfile.height || ''}
                   onChange={e => handleChange('height', parseInt(e.target.value) || 0)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors"
                   placeholder="0"
                 />
               ) : (
@@ -2229,7 +2490,7 @@ function ProfileView({ profile, onSave }: { profile: UserProfile, onSave: (p: Us
                   type="number" 
                   value={localProfile.age || ''}
                   onChange={e => handleChange('age', parseInt(e.target.value) || 0)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors"
                   placeholder="0"
                 />
               ) : (
@@ -2242,7 +2503,7 @@ function ProfileView({ profile, onSave }: { profile: UserProfile, onSave: (p: Us
                 <select 
                   value={localProfile.gender}
                   onChange={e => handleChange('gender', e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors appearance-none"
                 >
                   <option value="male">Masculino</option>
                   <option value="female">Feminino</option>
@@ -2261,7 +2522,7 @@ function ProfileView({ profile, onSave }: { profile: UserProfile, onSave: (p: Us
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
             <div className="text-zinc-500 mb-2">IMC</div>
-            <div className="text-2xl font-bold text-emerald-400">
+            <div className="text-2xl font-bold text-brand-400">
               {profile.weight && profile.height 
                 ? (profile.weight / ((profile.height / 100) ** 2)).toFixed(1)
                 : '-'}
@@ -2269,10 +2530,145 @@ function ProfileView({ profile, onSave }: { profile: UserProfile, onSave: (p: Us
           </div>
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
             <div className="text-zinc-500 mb-2">Meta Diária</div>
-            <div className="text-2xl font-bold text-emerald-400">
+            <div className="text-2xl font-bold text-brand-400">
               {profile.weight ? Math.round(profile.weight * 30) : '-'} <span className="text-sm text-zinc-500 font-normal">kcal</span>
             </div>
           </div>
+        </div>
+
+        <button 
+          onClick={onLogout}
+          className="w-full py-4 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+        >
+          <RotateCcw size={20} />
+          Sair da Conta
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+// --- Auth View ---
+function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (email: string, pass: string) => boolean, onCreateAccount: (profile: UserProfile) => void, existingProfile?: UserProfile, key?: React.Key }) {
+  const [isLoginMode, setIsLoginMode] = useState(!!existingProfile?.email);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [error, setError] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (isLoginMode) {
+      if (!email || !password) {
+        setError('Preencha todos os campos.');
+        return;
+      }
+      const success = onLogin(email, password);
+      if (!success) {
+        setError('Email ou senha incorretos.');
+      }
+    } else {
+      if (!name || !email || !password) {
+        setError('Preencha todos os campos.');
+        return;
+      }
+      onCreateAccount({
+        name,
+        email,
+        password,
+        weight: 0,
+        height: 0,
+        age: 0,
+        gender: 'other'
+      });
+    }
+  };
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="flex flex-col items-center justify-center min-h-screen p-6"
+    >
+      <div className="w-full max-w-sm space-y-8">
+        <div className="text-center mb-8">
+          <h1 className="text-5xl font-bold tracking-tighter mb-2">
+            <span className="text-white">Iron</span>
+            <span className="text-brand-500">Track</span>
+          </h1>
+          <p className="text-zinc-500 font-mono text-sm uppercase tracking-[0.2em]">
+            Sua rotina de força
+          </p>
+        </div>
+
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-6">
+          <div className="flex border-b border-zinc-800 pb-4">
+            <button 
+              onClick={() => { setIsLoginMode(true); setError(''); }}
+              className={`flex-1 pb-2 text-sm font-medium transition-colors ${isLoginMode ? 'text-brand-500 border-b-2 border-brand-500' : 'text-zinc-500'}`}
+            >
+              Entrar
+            </button>
+            <button 
+              onClick={() => { setIsLoginMode(false); setError(''); }}
+              className={`flex-1 pb-2 text-sm font-medium transition-colors ${!isLoginMode ? 'text-brand-500 border-b-2 border-brand-500' : 'text-zinc-500'}`}
+            >
+              Criar Conta
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {!isLoginMode && (
+              <div>
+                <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Nome</label>
+                <input 
+                  type="text" 
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors"
+                  placeholder="Seu nome"
+                />
+              </div>
+            )}
+
+            <div>
+              <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Email</label>
+              <input 
+                type="email" 
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors"
+                placeholder="seu@email.com"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Senha</label>
+              <input 
+                type="password" 
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors"
+                placeholder="********"
+              />
+            </div>
+
+            {error && (
+              <div className="text-red-500 text-sm text-center bg-red-500/10 p-2 rounded-lg border border-red-500/20">
+                {error}
+              </div>
+            )}
+
+            <button 
+              type="submit"
+              className="w-full py-4 bg-brand-500 text-zinc-950 hover:bg-brand-400 rounded-xl font-bold transition-colors shadow-lg shadow-brand-500/20"
+            >
+              {isLoginMode ? 'Entrar' : 'Começar Agora'}
+            </button>
+          </form>
         </div>
       </div>
     </motion.div>

@@ -1,5 +1,19 @@
 @import "tailwindcss";
 
+@theme {
+  --color-brand-50: #FFF9E5;
+  --color-brand-100: #FFEDC2;
+  --color-brand-200: #FFE099;
+  --color-brand-300: #FFD270;
+  --color-brand-400: #FFC447;
+  --color-brand-500: #FFB200;
+  --color-brand-600: #CC8E00;
+  --color-brand-700: #996B00;
+  --color-brand-800: #664700;
+  --color-brand-900: #332400;
+  --color-brand-950: #1A1200;
+}
+
 @layer utilities {
   .scrollbar-hide {
     -ms-overflow-style: none;

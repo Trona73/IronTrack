@@ -45,6 +45,8 @@ export interface CompletedExercise {
 
 export interface UserProfile {
   name: string;
+  email?: string;
+  password?: string;
   weight: number;
   height: number;
   age: number;
