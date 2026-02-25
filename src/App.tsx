@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User, TrendingUp, RotateCcw } from 'lucide-react';
+import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User, TrendingUp, RotateCcw, BarChart2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 import { WorkoutPlan, WorkoutSession, Exercise, PlannedExercise, CompletedSet, CompletedExercise, UserProfile, Equipment, MuscleGroup } from './types';
@@ -485,8 +485,8 @@ export default function App() {
               onClick={() => setCurrentView('exercises')} 
             />
             <NavItem 
-              icon={<HistoryIcon size={24} />} 
-              label="Histórico" 
+              icon={<BarChart2 size={24} />} 
+              label="Progresso" 
               isActive={currentView === 'history'} 
               onClick={() => setCurrentView('history')} 
             />
@@ -1807,7 +1807,7 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory, onGe
     >
       <header className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight mb-1">Evolução</h1>
+          <h1 className="text-3xl font-bold tracking-tight mb-1">Progresso</h1>
           <p className="text-zinc-400">Análise técnica por exercício.</p>
         </div>
         <div className="flex gap-2">
@@ -1824,7 +1824,7 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory, onGe
             <button 
               onClick={() => setShowClearConfirmation(true)}
               className="text-red-500 hover:text-red-400 p-2 rounded-full hover:bg-zinc-800 transition-colors"
-              title="Limpar Histórico"
+              title="Limpar Progresso"
             >
               <Trash2 size={20} />
             </button>
@@ -1915,7 +1915,7 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory, onGe
 
       {exercisesWithHistory.length === 0 ? (
          <div className="text-center py-10 text-zinc-500 italic">
-           Nenhum histórico disponível.
+           Nenhum progresso disponível.
          </div>
       ) : (
         <div className="space-y-3">
@@ -2033,7 +2033,7 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory, onGe
               className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-sm w-full shadow-xl"
               onClick={e => e.stopPropagation()}
             >
-              <h3 className="text-xl font-bold mb-2">Limpar Histórico?</h3>
+              <h3 className="text-xl font-bold mb-2">Limpar Progresso?</h3>
               <p className="text-zinc-400 mb-6">Esta ação apagará todos os registros de treinos realizados. Esta ação não pode ser desfeita.</p>
               <div className="flex gap-3">
                 <button 
