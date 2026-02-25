@@ -34,6 +34,7 @@ export interface CompletedSet {
   reps: number;
   weight: number;
   completedAt: string; // ISO string
+  rpe?: number;
 }
 
 export interface CompletedExercise {

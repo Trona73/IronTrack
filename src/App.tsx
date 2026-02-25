@@ -142,6 +142,134 @@ export default function App() {
     setSessions([]);
   };
 
+  const generateSimulationData = () => {
+    // 1. Create 3 Plans
+    const planA: WorkoutPlan = {
+      id: 'sim_plan_a',
+      name: 'Simulação A - Peito/Ombro/Tríceps',
+      daysOfWeek: [1],
+      exercises: [
+        { id: 'sim_pe_1', exerciseId: 'e1', sets: [{ reps: 10, weight: 60 }, { reps: 8, weight: 65 }] }, // Supino
+        { id: 'sim_pe_2', exerciseId: 'e4', sets: [{ reps: 12, weight: 14 }, { reps: 10, weight: 16 }] }, // Desenv.
+        { id: 'sim_pe_3', exerciseId: 'e6', sets: [{ reps: 15, weight: 20 }, { reps: 12, weight: 25 }] }, // Triceps
+      ]
+    };
+
+    const planB: WorkoutPlan = {
+      id: 'sim_plan_b',
+      name: 'Simulação B - Costas/Bíceps',
+      daysOfWeek: [2],
+      exercises: [
+        { id: 'sim_pe_4', exerciseId: 'e8', sets: [{ reps: 12, weight: 50 }, { reps: 10, weight: 55 }] }, // Puxada
+        { id: 'sim_pe_5', exerciseId: 'e15', sets: [{ reps: 10, weight: 40 }, { reps: 8, weight: 45 }] }, // Remada
+        { id: 'sim_pe_6', exerciseId: 'e5', sets: [{ reps: 12, weight: 10 }, { reps: 10, weight: 12 }] }, // Rosca
+      ]
+    };
+
+    const planC: WorkoutPlan = {
+      id: 'sim_plan_c',
+      name: 'Simulação C - Pernas',
+      daysOfWeek: [3],
+      exercises: [
+        { id: 'sim_pe_7', exerciseId: 'e2', sets: [{ reps: 10, weight: 80 }, { reps: 8, weight: 90 }] }, // Agachamento
+        { id: 'sim_pe_8', exerciseId: 'e7', sets: [{ reps: 12, weight: 120 }, { reps: 10, weight: 140 }] }, // Leg Press
+        { id: 'sim_pe_9', exerciseId: 'e10', sets: [{ reps: 15, weight: 40 }, { reps: 12, weight: 45 }] }, // Extensora
+      ]
+    };
+
+    // Add plans if they don't exist
+    setPlans(prev => {
+      const newPlans = [...prev];
+      if (!newPlans.find(p => p.id === planA.id)) newPlans.push(planA);
+      if (!newPlans.find(p => p.id === planB.id)) newPlans.push(planB);
+      if (!newPlans.find(p => p.id === planC.id)) newPlans.push(planC);
+      return newPlans;
+    });
+
+    // 2. Create Sessions (History)
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
+    // Cycle 1 (Baseline) - 1 Week Ago
+    const sessionA1: WorkoutSession = {
+      id: 'sim_session_a1',
+      planId: planA.id,
+      startTime: new Date(oneWeekAgo.getTime() + 0 * 24 * 60 * 60 * 1000).toISOString(), // Monday
+      endTime: new Date(oneWeekAgo.getTime() + 0 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString(),
+      exercises: [
+        { exerciseId: 'e1', durationSeconds: 600, sets: [{ reps: 10, weight: 60, completedAt: new Date().toISOString(), rpe: 7 }, { reps: 8, weight: 65, completedAt: new Date().toISOString(), rpe: 8 }] },
+        { exerciseId: 'e4', durationSeconds: 600, sets: [{ reps: 12, weight: 14, completedAt: new Date().toISOString(), rpe: 7 }, { reps: 10, weight: 16, completedAt: new Date().toISOString(), rpe: 8 }] },
+        { exerciseId: 'e6', durationSeconds: 600, sets: [{ reps: 15, weight: 20, completedAt: new Date().toISOString(), rpe: 7 }, { reps: 12, weight: 25, completedAt: new Date().toISOString(), rpe: 8 }] },
+      ]
+    };
+
+    const sessionB1: WorkoutSession = {
+      id: 'sim_session_b1',
+      planId: planB.id,
+      startTime: new Date(oneWeekAgo.getTime() + 1 * 24 * 60 * 60 * 1000).toISOString(), // Tuesday
+      endTime: new Date(oneWeekAgo.getTime() + 1 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString(),
+      exercises: [
+        { exerciseId: 'e8', durationSeconds: 600, sets: [{ reps: 12, weight: 50, completedAt: new Date().toISOString(), rpe: 7 }, { reps: 10, weight: 55, completedAt: new Date().toISOString(), rpe: 8 }] },
+        { exerciseId: 'e15', durationSeconds: 600, sets: [{ reps: 10, weight: 40, completedAt: new Date().toISOString(), rpe: 7 }, { reps: 8, weight: 45, completedAt: new Date().toISOString(), rpe: 8 }] },
+        { exerciseId: 'e5', durationSeconds: 600, sets: [{ reps: 12, weight: 10, completedAt: new Date().toISOString(), rpe: 7 }, { reps: 10, weight: 12, completedAt: new Date().toISOString(), rpe: 8 }] },
+      ]
+    };
+
+    const sessionC1: WorkoutSession = {
+      id: 'sim_session_c1',
+      planId: planC.id,
+      startTime: new Date(oneWeekAgo.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(), // Wednesday
+      endTime: new Date(oneWeekAgo.getTime() + 2 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString(),
+      exercises: [
+        { exerciseId: 'e2', durationSeconds: 600, sets: [{ reps: 10, weight: 80, completedAt: new Date().toISOString(), rpe: 7 }, { reps: 8, weight: 90, completedAt: new Date().toISOString(), rpe: 8 }] },
+        { exerciseId: 'e7', durationSeconds: 600, sets: [{ reps: 12, weight: 120, completedAt: new Date().toISOString(), rpe: 7 }, { reps: 10, weight: 140, completedAt: new Date().toISOString(), rpe: 8 }] },
+        { exerciseId: 'e10', durationSeconds: 600, sets: [{ reps: 15, weight: 40, completedAt: new Date().toISOString(), rpe: 7 }, { reps: 12, weight: 45, completedAt: new Date().toISOString(), rpe: 8 }] },
+      ]
+    };
+
+    // Cycle 2 (Current) - This Week
+    // Plan A: Progress (+2kg on Supino)
+    const sessionA2: WorkoutSession = {
+      id: 'sim_session_a2',
+      planId: planA.id,
+      startTime: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+      endTime: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString(),
+      exercises: [
+        { exerciseId: 'e1', durationSeconds: 600, sets: [{ reps: 10, weight: 62, completedAt: new Date().toISOString(), rpe: 8 }, { reps: 8, weight: 67, completedAt: new Date().toISOString(), rpe: 9 }] }, // +2kg
+        { exerciseId: 'e4', durationSeconds: 600, sets: [{ reps: 12, weight: 14, completedAt: new Date().toISOString(), rpe: 8 }, { reps: 10, weight: 16, completedAt: new Date().toISOString(), rpe: 8 }] }, // Same
+        { exerciseId: 'e6', durationSeconds: 600, sets: [{ reps: 15, weight: 20, completedAt: new Date().toISOString(), rpe: 8 }, { reps: 12, weight: 25, completedAt: new Date().toISOString(), rpe: 8 }] }, // Same
+      ]
+    };
+
+    // Plan B: Same weights, higher RPE
+    const sessionB2: WorkoutSession = {
+      id: 'sim_session_b2',
+      planId: planB.id,
+      startTime: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000).toISOString(), // Yesterday
+      endTime: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString(),
+      exercises: [
+        { exerciseId: 'e8', durationSeconds: 600, sets: [{ reps: 12, weight: 50, completedAt: new Date().toISOString(), rpe: 8 }, { reps: 10, weight: 55, completedAt: new Date().toISOString(), rpe: 9 }] },
+        { exerciseId: 'e15', durationSeconds: 600, sets: [{ reps: 10, weight: 40, completedAt: new Date().toISOString(), rpe: 8 }, { reps: 8, weight: 45, completedAt: new Date().toISOString(), rpe: 9 }] },
+        { exerciseId: 'e5', durationSeconds: 600, sets: [{ reps: 12, weight: 10, completedAt: new Date().toISOString(), rpe: 8 }, { reps: 10, weight: 12, completedAt: new Date().toISOString(), rpe: 9 }] },
+      ]
+    };
+
+    // Plan C: Regress (-5kg on Agachamento)
+    const sessionC2: WorkoutSession = {
+      id: 'sim_session_c2',
+      planId: planC.id,
+      startTime: new Date(now.getTime()).toISOString(), // Today
+      endTime: new Date(now.getTime() + 60 * 60 * 1000).toISOString(),
+      exercises: [
+        { exerciseId: 'e2', durationSeconds: 600, sets: [{ reps: 10, weight: 75, completedAt: new Date().toISOString(), rpe: 9 }, { reps: 8, weight: 85, completedAt: new Date().toISOString(), rpe: 10 }] }, // -5kg
+        { exerciseId: 'e7', durationSeconds: 600, sets: [{ reps: 12, weight: 120, completedAt: new Date().toISOString(), rpe: 8 }, { reps: 10, weight: 140, completedAt: new Date().toISOString(), rpe: 9 }] },
+        { exerciseId: 'e10', durationSeconds: 600, sets: [{ reps: 15, weight: 40, completedAt: new Date().toISOString(), rpe: 8 }, { reps: 12, weight: 45, completedAt: new Date().toISOString(), rpe: 9 }] },
+      ]
+    };
+
+    setSessions([sessionC2, sessionB2, sessionA2, sessionC1, sessionB1, sessionA1]);
+  };
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 font-sans selection:bg-emerald-500/30">
       <main className="pb-24 max-w-md mx-auto min-h-screen relative overflow-hidden">
@@ -212,6 +340,7 @@ export default function App() {
               plans={plans}
               availableExercises={exercises}
               onClearHistory={clearHistory}
+              onGenerateSimulation={generateSimulationData}
             />
           )}
           {currentView === 'exercises' && (
@@ -1489,165 +1618,181 @@ function ActiveWorkoutView({ plan, availableExercises, onFinish, onCancel }: { p
 }
 
 // --- History View ---
-function HistoryView({ sessions, plans, availableExercises, onClearHistory }: { sessions: WorkoutSession[], plans: WorkoutPlan[], availableExercises: Exercise[], onClearHistory: () => void, key?: React.Key }) {
-  const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
+function HistoryView({ sessions, plans, availableExercises, onClearHistory, onGenerateSimulation }: { sessions: WorkoutSession[], plans: WorkoutPlan[], availableExercises: Exercise[], onClearHistory: () => void, onGenerateSimulation: () => void, key?: React.Key }) {
   const [showClearConfirmation, setShowClearConfirmation] = useState(false);
+  const [expandedExerciseId, setExpandedExerciseId] = useState<string | null>(null);
 
-  // Get all unique exercises performed in history
-  const performedExerciseIds = Array.from(new Set(
-    sessions.flatMap(s => s.exercises.map(e => e.exerciseId))
-  ));
+  // --- Data Preparation ---
+  // Group all completed exercises by exerciseId
+  const exerciseHistory: Record<string, { date: Date, sets: CompletedSet[] }[]> = {};
 
-  const chartData = selectedExerciseId ? sessions
-    .filter(s => s.exercises.some(e => e.exerciseId === selectedExerciseId))
-    .map(s => {
-      const ex = s.exercises.find(e => e.exerciseId === selectedExerciseId);
-      const maxWeight = ex ? Math.max(...ex.sets.map(set => set.weight)) : 0;
-      return {
-        date: new Date(s.startTime).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-        weight: maxWeight,
-        fullDate: new Date(s.startTime).toLocaleDateString('pt-BR')
-      };
-    })
-    .reverse() : [];
+  sessions.forEach(session => {
+    session.exercises.forEach(ex => {
+      if (!exerciseHistory[ex.exerciseId]) {
+        exerciseHistory[ex.exerciseId] = [];
+      }
+      exerciseHistory[ex.exerciseId].push({
+        date: new Date(session.startTime),
+        sets: ex.sets
+      });
+    });
+  });
+
+  // Sort history for each exercise by date desc
+  Object.keys(exerciseHistory).forEach(exId => {
+    exerciseHistory[exId].sort((a, b) => b.date.getTime() - a.date.getTime());
+  });
+
+  // Get list of exercises that have history
+  const exercisesWithHistory = Object.keys(exerciseHistory);
+
+  // Helper to calculate total volume of a session
+  const calculateVolume = (sets: CompletedSet[]) => {
+    return sets.reduce((acc, set) => acc + (set.weight * set.reps), 0);
+  };
+
+  // Helper to get max weight of a session
+  const getMaxWeight = (sets: CompletedSet[]) => {
+    return Math.max(...sets.map(s => s.weight));
+  };
 
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="p-6 pt-12 space-y-4"
+      className="p-6 pt-12 space-y-6"
     >
       <header className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight mb-1">Histórico</h1>
-          <p className="text-zinc-400">Seus treinos concluídos.</p>
+          <h1 className="text-3xl font-bold tracking-tight mb-1">Evolução</h1>
+          <p className="text-zinc-400">Análise técnica por exercício.</p>
         </div>
-        {sessions.length > 0 && (
-          <button 
-            onClick={() => setShowClearConfirmation(true)}
-            className="text-red-500 hover:text-red-400 p-2 rounded-full hover:bg-zinc-800 transition-colors"
-            title="Limpar Histórico"
-          >
-            <Trash2 size={20} />
-          </button>
-        )}
+        <div className="flex gap-2">
+          {sessions.length === 0 && (
+            <button 
+              onClick={onGenerateSimulation}
+              className="text-emerald-500 hover:text-emerald-400 p-2 rounded-full hover:bg-zinc-800 transition-colors"
+              title="Gerar Simulação"
+            >
+              <Play size={20} />
+            </button>
+          )}
+          {sessions.length > 0 && (
+            <button 
+              onClick={() => setShowClearConfirmation(true)}
+              className="text-red-500 hover:text-red-400 p-2 rounded-full hover:bg-zinc-800 transition-colors"
+              title="Limpar Histórico"
+            >
+              <Trash2 size={20} />
+            </button>
+          )}
+        </div>
       </header>
 
-      {/* Progress Chart Section */}
-      {performedExerciseIds.length > 0 && (
-        <section className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mb-4">
-          <div className="flex items-center gap-2 mb-3">
-            <TrendingUp className="text-emerald-500" size={20} />
-            <h2 className="font-bold text-lg">Progressão de Carga</h2>
-          </div>
-          
-          <div className="mb-4">
-            <select 
-              value={selectedExerciseId || ''} 
-              onChange={(e) => setSelectedExerciseId(e.target.value)}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
-            >
-              <option value="">Selecione um exercício</option>
-              {performedExerciseIds.map(id => {
-                const exDef = availableExercises.find(e => e.id === id);
-                return <option key={id} value={id}>{exDef?.name || 'Exercício desconhecido'}</option>
-              })}
-            </select>
-          </div>
-
-          {selectedExerciseId && chartData.length > 0 ? (
-            <div className="h-52 w-full">
-              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
-                  <XAxis 
-                    dataKey="date" 
-                    stroke="#71717a" 
-                    fontSize={10} 
-                    tickLine={false} 
-                    axisLine={false}
-                    tickMargin={10}
-                  />
-                  <YAxis 
-                    stroke="#71717a" 
-                    fontSize={10} 
-                    tickLine={false} 
-                    axisLine={false}
-                    tickFormatter={(value) => `${value}kg`}
-                  />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', borderRadius: '8px' }}
-                    itemStyle={{ color: '#10b981' }}
-                    labelStyle={{ color: '#a1a1aa', marginBottom: '4px' }}
-                    formatter={(value: number) => [`${value} kg`, 'Carga Máxima']}
-                    labelFormatter={(label, payload) => payload[0]?.payload.fullDate}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="weight" 
-                    stroke="#10b981" 
-                    strokeWidth={2} 
-                    dot={{ fill: '#10b981', r: 4 }} 
-                    activeDot={{ r: 6, fill: '#34d399' }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          ) : selectedExerciseId ? (
-            <div className="text-center py-8 text-zinc-500 text-sm">
-              Dados insuficientes para exibir o gráfico.
-            </div>
-          ) : null}
-        </section>
-      )}
-
-      {sessions.length === 0 ? (
-        <div className="text-center p-8 border border-dashed border-zinc-800 rounded-2xl text-zinc-500 mt-8">
-          <HistoryIcon className="mx-auto mb-4 opacity-50" size={32} />
-          Nenhum treino registrado ainda.
-        </div>
+      {exercisesWithHistory.length === 0 ? (
+         <div className="text-center py-10 text-zinc-500 italic">
+           Nenhum histórico disponível.
+         </div>
       ) : (
         <div className="space-y-3">
-          <h2 className="font-bold text-lg px-1">Últimos Treinos</h2>
-          {sessions.map(session => {
-            const plan = plans.find(p => p.id === session.planId);
-            const date = new Date(session.startTime);
-            const duration = session.endTime ? Math.floor((new Date(session.endTime).getTime() - date.getTime()) / 60000) : 0;
-            const totalVolume = session.exercises.reduce((acc, ex) => {
-              return acc + ex.sets.reduce((setAcc, set) => setAcc + (set.reps * set.weight), 0);
-            }, 0);
+          {exercisesWithHistory.map(exId => {
+            const history = exerciseHistory[exId];
+            const exerciseDef = availableExercises.find(e => e.id === exId);
+            const latestSession = history[0];
+            const previousSession = history.length > 1 ? history[1] : null;
+            
+            const latestVolume = calculateVolume(latestSession.sets);
+            const previousVolume = previousSession ? calculateVolume(previousSession.sets) : 0;
+            const volumeDelta = previousSession ? latestVolume - previousVolume : 0;
+            
+            const latestMaxWeight = getMaxWeight(latestSession.sets);
+
+            const isExpanded = expandedExerciseId === exId;
 
             return (
-              <div key={session.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h3 className="font-bold text-lg">{plan?.name || 'Treino Excluído'}</h3>
-                    <div className="text-sm text-zinc-400 mt-0.5">
-                      {date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'short' })}
+              <div key={exId} className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden transition-all">
+                {/* Card Header (Closed State) */}
+                <button 
+                  onClick={() => setExpandedExerciseId(isExpanded ? null : exId)}
+                  className="w-full px-4 py-4 flex items-center justify-between hover:bg-zinc-800/50 transition-colors"
+                >
+                  <div className="text-left">
+                    <h3 className="font-bold text-zinc-200">{exerciseDef?.name || 'Ex. Desconhecido'}</h3>
+                    <div className="text-xs text-zinc-500 font-mono mt-1">
+                      Última: {latestMaxWeight}kg
                     </div>
                   </div>
-                  <div className="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full text-xs font-mono flex items-center gap-1">
-                    <Clock size={12} />
-                    {duration} min
+                  
+                  <div className="flex items-center gap-4">
+                    {/* Delta Indicator */}
+                    <div className="flex flex-col items-end">
+                      <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-mono">VOL Δ</span>
+                      {previousSession ? (
+                        <div className={`font-mono font-bold text-sm flex items-center gap-1 ${volumeDelta > 0 ? 'text-emerald-500' : volumeDelta < 0 ? 'text-red-500' : 'text-zinc-500'}`}>
+                          {volumeDelta > 0 ? <TrendingUp size={14} /> : volumeDelta < 0 ? <TrendingUp size={14} className="rotate-180" /> : null}
+                          {volumeDelta > 0 ? '+' : ''}{volumeDelta}
+                        </div>
+                      ) : (
+                        <span className="text-zinc-600 font-mono text-sm">-</span>
+                      )}
+                    </div>
+                    <ChevronRight size={20} className={`text-zinc-600 transition-transform duration-300 ${isExpanded ? 'rotate-90' : ''}`} />
                   </div>
-                </div>
+                </button>
 
-                <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-zinc-800/50">
-                  <div>
-                    <div className="text-xs text-zinc-500 font-mono uppercase tracking-wider mb-0.5">Exercícios</div>
-                    <div className="font-bold text-xl">{session.exercises.length}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-zinc-500 font-mono uppercase tracking-wider mb-0.5">Volume Total</div>
-                    <div className="font-bold text-xl">{totalVolume} <span className="text-sm text-zinc-500 font-normal">kg</span></div>
-                  </div>
-                </div>
+                {/* Expanded Details */}
+                <AnimatePresence>
+                  {isExpanded && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden border-t border-zinc-800/50 bg-zinc-950/30"
+                    >
+                      <div className="p-4">
+                        <table className="w-full text-left text-xs font-mono">
+                          <thead>
+                            <tr className="text-zinc-500 border-b border-zinc-800/50">
+                              <th className="pb-2 font-normal">DATA</th>
+                              <th className="pb-2 font-normal text-center">CARGA</th>
+                              <th className="pb-2 font-normal text-center">REPS</th>
+                              <th className="pb-2 font-normal text-right">VOL Δ</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-zinc-800/30">
+                            {history.slice(0, 5).map((entry, idx) => {
+                              const entryVolume = calculateVolume(entry.sets);
+                              // Compare with the NEXT entry in the array (which is the previous chronological session)
+                              const prevEntry = history[idx + 1];
+                              const prevEntryVolume = prevEntry ? calculateVolume(prevEntry.sets) : 0;
+                              const delta = prevEntry ? entryVolume - prevEntryVolume : 0;
+                              const maxWeight = getMaxWeight(entry.sets);
+                              const totalReps = entry.sets.reduce((acc, s) => acc + s.reps, 0);
+
+                              return (
+                                <tr key={idx} className="text-zinc-300">
+                                  <td className="py-2">{entry.date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</td>
+                                  <td className="py-2 text-center">{maxWeight}kg</td>
+                                  <td className="py-2 text-center">{totalReps}</td>
+                                  <td className={`py-2 text-right font-bold ${delta > 0 ? 'text-emerald-500' : delta < 0 ? 'text-red-500' : 'text-zinc-600'}`}>
+                                    {prevEntry ? (delta > 0 ? `+${delta}` : delta) : '-'}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             );
           })}
         </div>
       )}
+
       {/* Clear History Confirmation Modal */}
       <AnimatePresence>
         {showClearConfirmation && (
