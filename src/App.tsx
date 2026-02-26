@@ -4,6 +4,8 @@ import { motion, AnimatePresence, Reorder } from 'motion/react';
 import { LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 import { WorkoutPlan, WorkoutSession, Exercise, PlannedExercise, CompletedSet, CompletedExercise, UserProfile, Equipment, MuscleGroup } from './types';
 import { EXERCISES, MOCK_PLANS } from './data';
+import { supabase } from './lib/supabase';
+import { supabaseService } from './services/supabaseService';
 
 const DEFAULT_MUSCLE_GROUPS = ['Peito', 'Costas', 'Pernas', 'Ombros', 'Braços', 'Core', 'Cardio'];
 const DEFAULT_EQUIPMENT = ['Halteres', 'Barra', 'Máquina', 'Peso Corporal', 'Cabos', 'Kettlebell'];
@@ -30,9 +32,35 @@ export default function App() {
   const [planToDelete, setPlanToDelete] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showAuth, setShowAuth] = useState(true); // Controls if AuthView is shown
+  const [supabaseSession, setSupabaseSession] = useState<any>(null);
 
-  // Load from local storage
+  // Load from local storage and Supabase
   useEffect(() => {
+    // Check Supabase session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSupabaseSession(session);
+      if (session) {
+        setIsAuthenticated(true);
+        setShowAuth(false);
+        // Fetch data from Supabase
+        loadSupabaseData(session.user.id);
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSupabaseSession(session);
+      if (session) {
+        setIsAuthenticated(true);
+        setShowAuth(false);
+        loadSupabaseData(session.user.id);
+      } else {
+        // If logged out, maybe clear data or fall back to local?
+        // For now, let's keep local data logic below
+      }
+    });
+
     const savedPlans = localStorage.getItem('iron_plans');
     const savedSessions = localStorage.getItem('iron_sessions');
     const savedProfile = localStorage.getItem('iron_profile');
@@ -49,31 +77,31 @@ export default function App() {
       setUserProfile(profile);
       // If profile exists and has email/password, require login
       if (profile.email && profile.password) {
-        setIsAuthenticated(false);
-        setShowAuth(true);
+        // Only enforce local auth if not using Supabase
+        if (!supabaseSession) {
+          setIsAuthenticated(false);
+          setShowAuth(true);
+        }
       } else {
-        // If no profile or incomplete, treat as new user (or just let them in if it's a legacy user without password)
-        // For this feature request, let's force auth if they have credentials, otherwise show creation
         if (profile.name) {
-           // Legacy user without password - let them in, but they can add password in profile
            setIsAuthenticated(true);
            setShowAuth(false);
         } else {
-           // New user
            setIsAuthenticated(false);
            setShowAuth(true);
         }
       }
     } else {
-      setIsAuthenticated(false);
-      setShowAuth(true);
+      if (!supabaseSession) {
+        setIsAuthenticated(false);
+        setShowAuth(true);
+      }
     }
     
     if (savedExercisesV2) {
       setExercises(JSON.parse(savedExercisesV2));
     } else if (savedExercises) {
       const customExercises = JSON.parse(savedExercises);
-      // Merge custom exercises with default ones, avoiding duplicates if any
       const defaultIds = new Set(EXERCISES.map(e => e.id));
       const newCustom = customExercises.filter((e: Exercise) => !defaultIds.has(e.id));
       setExercises([...EXERCISES, ...newCustom]);
@@ -81,7 +109,23 @@ export default function App() {
     
     if (savedMuscleGroups) setMuscleGroups(JSON.parse(savedMuscleGroups));
     if (savedEquipment) setEquipmentList(JSON.parse(savedEquipment));
+
+    return () => subscription.unsubscribe();
   }, []);
+
+  const loadSupabaseData = async (userId: string) => {
+    try {
+      const plans = await supabaseService.getWorkoutPlans();
+      setPlans(plans);
+      const exercises = await supabaseService.getExercises();
+      if (exercises.length > 0) {
+        setExercises(exercises);
+      }
+    } catch (error) {
+      console.error('Error loading Supabase data:', error);
+    }
+  };
+
 
   // Save to local storage
   useEffect(() => {
@@ -113,7 +157,8 @@ export default function App() {
     setExercises(prev => prev.filter(e => e.id !== id));
   };
 
-  const savePlan = (plan: WorkoutPlan) => {
+  const savePlan = async (plan: WorkoutPlan) => {
+    // Optimistic update
     setPlans(prev => {
       const exists = prev.find(p => p.id === plan.id);
       if (exists) {
@@ -123,16 +168,40 @@ export default function App() {
     });
     setPlanToEdit(null);
     setCurrentView('dashboard');
+
+    if (supabaseSession) {
+      try {
+        const exists = plans.find(p => p.id === plan.id);
+        if (exists) {
+           await supabaseService.updateWorkoutPlan(plan);
+        } else {
+           const newPlan = await supabaseService.createWorkoutPlan(plan, supabaseSession.user.id);
+           // Update with real ID from Supabase
+           setPlans(prev => prev.map(p => p.id === plan.id ? newPlan : p));
+        }
+      } catch (e) {
+        console.error('Error saving to Supabase:', e);
+      }
+    }
   };
 
   const deletePlan = (id: string) => {
     setPlanToDelete(id);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (planToDelete) {
-      setPlans(prev => prev.filter(p => p.id !== planToDelete));
+      const id = planToDelete;
+      setPlans(prev => prev.filter(p => p.id !== id));
       setPlanToDelete(null);
+
+      if (supabaseSession) {
+        try {
+          await supabaseService.deleteWorkoutPlan(id);
+        } catch (e) {
+          console.error('Error deleting from Supabase:', e);
+        }
+      }
     }
   };
 
@@ -142,7 +211,7 @@ export default function App() {
   };
 
   const togglePlanDay = (planId: string, day: number) => {
-    setPlans(prev => prev.map(p => {
+    const updatedPlans = plans.map(p => {
       if (p.id === planId) {
         const newDays = p.daysOfWeek.includes(day)
           ? p.daysOfWeek.filter(d => d !== day)
@@ -150,7 +219,16 @@ export default function App() {
         return { ...p, daysOfWeek: newDays };
       }
       return p;
-    }));
+    });
+    setPlans(updatedPlans);
+    
+    // Sync update to Supabase if logged in
+    if (supabaseSession) {
+      const plan = updatedPlans.find(p => p.id === planId);
+      if (plan) {
+        supabaseService.updateWorkoutPlan(plan).catch(console.error);
+      }
+    }
   };
 
   const startWorkout = (plan: WorkoutPlan) => {
@@ -158,17 +236,40 @@ export default function App() {
     setCurrentView('active');
   };
 
-  const finishWorkout = (session: WorkoutSession) => {
+  const finishWorkout = async (session: WorkoutSession) => {
     setSessions(prev => [session, ...prev]);
     setActivePlan(null);
     setCurrentView('dashboard');
+
+    if (supabaseSession) {
+      try {
+        await supabaseService.saveWorkoutSession(session, supabaseSession.user.id);
+      } catch (e) {
+        console.error('Error saving session to Supabase:', e);
+      }
+    }
   };
 
   const clearHistory = () => {
     setSessions([]);
   };
 
-  const handleLogin = (email: string, pass: string) => {
+  const handleLogin = async (email: string, pass: string) => {
+    // Try Supabase login first
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password: pass,
+      });
+      if (!error) {
+        return true;
+      }
+      // If Supabase fails, fall back to local auth (legacy)
+      console.log('Supabase login failed, trying local:', error.message);
+    } catch (e) {
+      console.error(e);
+    }
+
     if (userProfile.email === email && userProfile.password === pass) {
       setIsAuthenticated(true);
       setShowAuth(false);
@@ -177,13 +278,38 @@ export default function App() {
     return false;
   };
 
-  const handleCreateAccount = (profile: UserProfile) => {
+  const handleCreateAccount = async (profile: UserProfile) => {
+    // Try Supabase signup
+    if (profile.email && profile.password) {
+      try {
+        const { error } = await supabase.auth.signUp({
+          email: profile.email,
+          password: profile.password,
+          options: {
+            data: {
+              full_name: profile.name,
+            }
+          }
+        });
+        if (error) {
+          console.error('Supabase signup error:', error.message);
+          alert('Erro ao criar conta no Supabase: ' + error.message);
+          return; // Don't proceed to local if Supabase fails (to avoid confusion)
+        }
+        alert('Conta criada! Verifique seu email para confirmar.');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
     setUserProfile(profile);
     setIsAuthenticated(true);
     setShowAuth(false);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setSupabaseSession(null);
     setIsAuthenticated(false);
     setShowAuth(true);
   };
@@ -2565,40 +2691,50 @@ function ProfileView({ profile, onSave, onLogout }: { profile: UserProfile, onSa
 }
 
 // --- Auth View ---
-function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (email: string, pass: string) => boolean, onCreateAccount: (profile: UserProfile) => void, existingProfile?: UserProfile, key?: React.Key }) {
+function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (email: string, pass: string) => Promise<boolean>, onCreateAccount: (profile: UserProfile) => Promise<void>, existingProfile?: UserProfile, key?: React.Key }) {
   const [isLoginMode, setIsLoginMode] = useState(!!existingProfile?.email);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
-    if (isLoginMode) {
-      if (!email || !password) {
-        setError('Preencha todos os campos.');
-        return;
+    try {
+      if (isLoginMode) {
+        if (!email || !password) {
+          setError('Preencha todos os campos.');
+          setLoading(false);
+          return;
+        }
+        const success = await onLogin(email, password);
+        if (!success) {
+          setError('Email ou senha incorretos.');
+        }
+      } else {
+        if (!name || !email || !password) {
+          setError('Preencha todos os campos.');
+          setLoading(false);
+          return;
+        }
+        await onCreateAccount({
+          name,
+          email,
+          password,
+          weight: 0,
+          height: 0,
+          age: 0,
+          gender: 'other'
+        });
       }
-      const success = onLogin(email, password);
-      if (!success) {
-        setError('Email ou senha incorretos.');
-      }
-    } else {
-      if (!name || !email || !password) {
-        setError('Preencha todos os campos.');
-        return;
-      }
-      onCreateAccount({
-        name,
-        email,
-        password,
-        weight: 0,
-        height: 0,
-        age: 0,
-        gender: 'other'
-      });
+    } catch (err: any) {
+      setError(err.message || 'Ocorreu um erro.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -2680,9 +2816,10 @@ function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (ema
 
             <button 
               type="submit"
-              className="w-full py-4 bg-brand-500 text-zinc-950 hover:bg-brand-400 rounded-xl font-bold transition-colors shadow-lg shadow-brand-500/20"
+              disabled={loading}
+              className="w-full py-4 bg-brand-500 text-zinc-950 hover:bg-brand-400 rounded-xl font-bold transition-colors shadow-lg shadow-brand-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoginMode ? 'Entrar' : 'Começar Agora'}
+              {loading ? 'Carregando...' : (isLoginMode ? 'Entrar' : 'Começar Agora')}
             </button>
           </form>
         </div>
