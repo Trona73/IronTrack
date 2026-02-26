@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User, TrendingUp, RotateCcw, BarChart2, Settings, LogOut, Printer } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
@@ -2353,16 +2354,21 @@ function SettingsView({
               visibility: visible;
             }
             #printable-area {
-              position: absolute;
+              position: fixed;
               left: 0;
               top: 0;
               width: 100%;
-              height: 50vh; /* Occupy half A4 roughly */
-              overflow: hidden;
+              height: 100%;
+              margin: 0;
+              padding: 20px;
+              background: white;
+              color: black;
+              z-index: 9999;
+              overflow: visible;
             }
             @page {
               size: A4;
-              margin: 1cm;
+              margin: 10mm;
             }
           }
         `}
@@ -2414,47 +2420,50 @@ function SettingsView({
         </div>
       </motion.div>
 
-      {/* Printable View (Hidden on Screen) */}
-      <div id="printable-area" className="hidden print:block bg-white text-black p-4 font-sans">
-        <h1 className="text-xl font-bold mb-4 text-center border-b pb-2 uppercase tracking-wide">Cronograma de Treinos - IronTrack</h1>
-        <div className="grid grid-cols-2 gap-4 text-xs">
-          {daysMap.map((dayName, index) => {
-            const dayPlans = plans.filter(p => p.daysOfWeek.includes(index));
-            if (dayPlans.length === 0) return null;
+      {/* Printable View (Portal to Body) */}
+      {createPortal(
+        <div id="printable-area" className="hidden print:block bg-white text-black font-sans">
+          <h1 className="text-xl font-bold mb-4 text-center border-b pb-2 uppercase tracking-wide">Cronograma de Treinos - IronTrack</h1>
+          <div className="grid grid-cols-2 gap-4 text-xs">
+            {daysMap.map((dayName, index) => {
+              const dayPlans = plans.filter(p => p.daysOfWeek.includes(index));
+              if (dayPlans.length === 0) return null;
 
-            return (
-              <div key={index} className="border border-gray-300 rounded-lg p-3 break-inside-avoid bg-gray-50">
-                <h3 className="font-bold text-sm bg-gray-200 p-1 rounded mb-2 text-center uppercase">{dayName}</h3>
-                {dayPlans.map(plan => (
-                  <div key={plan.id} className="mb-3 last:mb-0">
-                    <div className="font-bold text-xs mb-1 text-blue-800 uppercase tracking-tight">{plan.name}</div>
-                    <ul className="space-y-1">
-                      {plan.exercises.map(ex => {
-                        const exerciseDef = availableExercises.find(e => e.id === ex.exerciseId);
-                        return (
-                          <li key={ex.id} className="flex flex-col border-b border-gray-200 pb-1 last:border-0">
-                            <span className="font-semibold truncate">{exerciseDef?.name || 'Exercício'}</span>
-                            <div className="pl-2 text-gray-600 font-mono text-[10px]">
-                              {ex.sets.map((s, i) => (
-                                <span key={i} className="mr-2">
-                                  {s.reps}x{s.weight}kg
-                                </span>
-                              ))}
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            );
-          })}
-        </div>
-        <div className="mt-4 text-center text-[10px] text-gray-400 uppercase tracking-widest">
-          Gerado por IronTrack
-        </div>
-      </div>
+              return (
+                <div key={index} className="border border-gray-300 rounded-lg p-3 break-inside-avoid bg-gray-50">
+                  <h3 className="font-bold text-sm bg-gray-200 p-1 rounded mb-2 text-center uppercase">{dayName}</h3>
+                  {dayPlans.map(plan => (
+                    <div key={plan.id} className="mb-3 last:mb-0">
+                      <div className="font-bold text-xs mb-1 text-blue-800 uppercase tracking-tight">{plan.name}</div>
+                      <ul className="space-y-1">
+                        {plan.exercises.map(ex => {
+                          const exerciseDef = availableExercises.find(e => e.id === ex.exerciseId);
+                          return (
+                            <li key={ex.id} className="flex flex-col border-b border-gray-200 pb-1 last:border-0">
+                              <span className="font-semibold truncate">{exerciseDef?.name || 'Exercício'}</span>
+                              <div className="pl-2 text-gray-600 font-mono text-[10px]">
+                                {ex.sets.map((s, i) => (
+                                  <span key={i} className="mr-2">
+                                    {s.reps}x{s.weight}kg
+                                  </span>
+                                ))}
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-4 text-center text-[10px] text-gray-400 uppercase tracking-widest">
+            Gerado por IronTrack
+          </div>
+        </div>,
+        document.body
+      )}
     </>
   );
 }
