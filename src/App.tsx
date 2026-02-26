@@ -2819,7 +2819,7 @@ function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (ema
               disabled={loading}
               className="w-full py-4 bg-brand-500 text-zinc-950 hover:bg-brand-400 rounded-xl font-bold transition-colors shadow-lg shadow-brand-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Carregando...' : (isLoginMode ? 'Entrar' : 'Começar Agora')}
+              {loading ? 'Carregando...' : (isLoginMode ? 'Entrar' : 'Criar Conta')}
             </button>
           </form>
         </div>
