@@ -4,6 +4,7 @@ import { motion, AnimatePresence, Reorder } from 'motion/react';
 import { LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 import { WorkoutPlan, WorkoutSession, Exercise, PlannedExercise, CompletedSet, CompletedExercise, UserProfile, Equipment, MuscleGroup } from './types';
 import { EXERCISES, MOCK_PLANS } from './data';
+import { supabaseService } from './services/supabaseService';
 
 const DEFAULT_MUSCLE_GROUPS = ['Peito', 'Costas', 'Pernas', 'Ombros', 'Braços', 'Core', 'Cardio'];
 const DEFAULT_EQUIPMENT = ['Halteres', 'Barra', 'Máquina', 'Peso Corporal', 'Cabos', 'Kettlebell'];
@@ -83,6 +84,32 @@ export default function App() {
     if (savedEquipment) setEquipmentList(JSON.parse(savedEquipment));
   }, []);
 
+  // Load from Supabase if configured
+  useEffect(() => {
+    const loadFromSupabase = async () => {
+      if (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY) {
+        try {
+          const [fetchedPlans, fetchedExercises] = await Promise.all([
+            supabaseService.getWorkoutPlans(),
+            supabaseService.getExercises()
+          ]);
+          
+          if (fetchedPlans && fetchedPlans.length > 0) {
+            setPlans(fetchedPlans);
+          }
+          
+          if (fetchedExercises && fetchedExercises.length > 0) {
+            setExercises(fetchedExercises);
+          }
+        } catch (error) {
+          console.error('Error loading from Supabase:', error);
+        }
+      }
+    };
+    
+    loadFromSupabase();
+  }, []);
+
   // Save to local storage
   useEffect(() => {
     try {
@@ -113,26 +140,40 @@ export default function App() {
     setExercises(prev => prev.filter(e => e.id !== id));
   };
 
-  const savePlan = (plan: WorkoutPlan) => {
-    setPlans(prev => {
-      const exists = prev.find(p => p.id === plan.id);
-      if (exists) {
-        return prev.map(p => p.id === plan.id ? plan : p);
+  const savePlan = async (plan: WorkoutPlan) => {
+    try {
+      const savedPlan = await supabaseService.saveWorkoutPlan(plan);
+      if (savedPlan) {
+        setPlans(prev => {
+          const exists = prev.find(p => p.id === plan.id);
+          if (exists) {
+            return prev.map(p => p.id === plan.id ? savedPlan : p);
+          }
+          return [...prev, savedPlan];
+        });
       }
-      return [...prev, plan];
-    });
-    setPlanToEdit(null);
-    setCurrentView('dashboard');
+      setPlanToEdit(null);
+      setCurrentView('dashboard');
+    } catch (e) {
+      console.error("Failed to save plan", e);
+      alert("Erro ao salvar treino. Tente novamente.");
+    }
   };
 
   const deletePlan = (id: string) => {
     setPlanToDelete(id);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (planToDelete) {
-      setPlans(prev => prev.filter(p => p.id !== planToDelete));
-      setPlanToDelete(null);
+      try {
+        await supabaseService.deleteWorkoutPlan(planToDelete);
+        setPlans(prev => prev.filter(p => p.id !== planToDelete));
+        setPlanToDelete(null);
+      } catch (e) {
+        console.error("Failed to delete plan", e);
+        alert("Erro ao excluir treino.");
+      }
     }
   };
 
@@ -141,16 +182,23 @@ export default function App() {
     setCurrentView('builder');
   };
 
-  const togglePlanDay = (planId: string, day: number) => {
-    setPlans(prev => prev.map(p => {
-      if (p.id === planId) {
-        const newDays = p.daysOfWeek.includes(day)
-          ? p.daysOfWeek.filter(d => d !== day)
-          : [...p.daysOfWeek, day].sort();
-        return { ...p, daysOfWeek: newDays };
-      }
-      return p;
-    }));
+  const togglePlanDay = async (planId: string, day: number) => {
+    const plan = plans.find(p => p.id === planId);
+    if (!plan) return;
+
+    const newDays = plan.daysOfWeek.includes(day)
+      ? plan.daysOfWeek.filter(d => d !== day)
+      : [...plan.daysOfWeek, day].sort();
+    
+    const updatedPlan = { ...plan, daysOfWeek: newDays };
+
+    setPlans(prev => prev.map(p => p.id === planId ? updatedPlan : p));
+
+    try {
+      await supabaseService.saveWorkoutPlan(updatedPlan);
+    } catch (e) {
+      console.error("Failed to update plan days", e);
+    }
   };
 
   const startWorkout = (plan: WorkoutPlan) => {
@@ -158,7 +206,12 @@ export default function App() {
     setCurrentView('active');
   };
 
-  const finishWorkout = (session: WorkoutSession) => {
+  const finishWorkout = async (session: WorkoutSession) => {
+    try {
+      await supabaseService.saveWorkoutSession(session);
+    } catch (e) {
+      console.error("Failed to save session to Supabase", e);
+    }
     setSessions(prev => [session, ...prev]);
     setActivePlan(null);
     setCurrentView('dashboard');
