@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User, TrendingUp, RotateCcw, BarChart2, Settings } from 'lucide-react';
+import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User, TrendingUp, RotateCcw, BarChart2, Settings, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 import { WorkoutPlan, WorkoutSession, Exercise, PlannedExercise, CompletedSet, CompletedExercise, UserProfile, Equipment, MuscleGroup } from './types';
@@ -2551,10 +2551,10 @@ function ProfileView({ profile, onSave, onLogout }: { profile: UserProfile, onSa
 
         <button 
           onClick={onLogout}
-          className="w-full py-4 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+          className="w-full py-4 bg-transparent text-red-500 hover:bg-zinc-900 rounded-xl font-medium text-xl transition-colors flex items-center justify-center gap-3"
         >
-          <RotateCcw size={20} />
-          Sair da Conta
+          <LogOut size={28} />
+          Sair
         </button>
       </div>
     </motion.div>
