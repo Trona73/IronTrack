@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User, TrendingUp, RotateCcw, BarChart2, Settings, LogOut, Printer } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User, TrendingUp, RotateCcw, BarChart2, Settings, GripVertical } from 'lucide-react';
+import { motion, AnimatePresence, Reorder } from 'motion/react';
 import { LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 import { WorkoutPlan, WorkoutSession, Exercise, PlannedExercise, CompletedSet, CompletedExercise, UserProfile, Equipment, MuscleGroup } from './types';
 import { EXERCISES, MOCK_PLANS } from './data';
@@ -356,8 +355,6 @@ export default function App() {
                 <SettingsView 
                   key="settings"
                   onBack={() => setCurrentView('dashboard')}
-                  plans={plans}
-                  availableExercises={exercises}
                 />
               )}
               {currentView === 'weekly-schedule' && dayToEdit !== null && (
@@ -1192,17 +1189,20 @@ function BuilderView({
             </button>
           </div>
 
-          <div className="space-y-4">
+          <Reorder.Group axis="y" values={exercises} onReorder={setExercises} className="space-y-4 list-none p-0">
             {exercises.map((ex, index) => {
               const exerciseDef = availableExercises.find(e => e.id === ex.exerciseId);
               return (
-                <div key={ex.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+                <Reorder.Item key={ex.id} value={ex} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 relative">
                   <div className="flex justify-between items-center mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center font-mono text-xs text-zinc-400">
+                      <div className="cursor-grab active:cursor-grabbing text-zinc-600 hover:text-zinc-400 -ml-1" onPointerDown={(e) => e.preventDefault()}>
+                        <GripVertical size={20} />
+                      </div>
+                      <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center font-mono text-xs text-zinc-400 select-none">
                         {index + 1}
                       </div>
-                      <span className="font-semibold">{exerciseDef?.name || 'Exercício não encontrado'}</span>
+                      <span className="font-semibold select-none">{exerciseDef?.name || 'Exercício não encontrado'}</span>
                     </div>
                     <button onClick={() => removeExercise(ex.id)} className="text-red-400 p-2">
                       <Trash2 size={16} />
@@ -1210,7 +1210,7 @@ function BuilderView({
                   </div>
 
                   <div className="space-y-2">
-                    <div className="grid grid-cols-[3rem_1fr_1fr_3rem] gap-2 text-xs font-mono text-zinc-500 px-2 mb-1">
+                    <div className="grid grid-cols-[3rem_1fr_1fr_3rem] gap-2 text-xs font-mono text-zinc-500 px-2 mb-1 select-none">
                       <div className="text-center">Série</div>
                       <div className="text-center">Reps</div>
                       <div className="text-center">Carga (kg)</div>
@@ -1218,7 +1218,7 @@ function BuilderView({
                     </div>
                     {ex.sets.map((set, sIdx) => (
                       <div key={sIdx} className="grid grid-cols-[3rem_1fr_1fr_3rem] gap-2 items-center">
-                        <div className="bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800">
+                        <div className="bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800 select-none">
                           {sIdx + 1}
                         </div>
                         <input 
@@ -1245,7 +1245,7 @@ function BuilderView({
                       + Adicionar Série
                     </button>
                   </div>
-                </div>
+                </Reorder.Item>
               );
             })}
             {exercises.length === 0 && (
@@ -1253,7 +1253,7 @@ function BuilderView({
                 Nenhum exercício adicionado.
               </div>
             )}
-          </div>
+          </Reorder.Group>
         </div>
       </div>
 
@@ -2326,196 +2326,35 @@ function ExercisesView({
 }
 
 // --- Settings View ---
-function SettingsView({ 
-  onBack, 
-  plans, 
-  availableExercises 
-}: { 
-  onBack: () => void, 
-  plans: WorkoutPlan[], 
-  availableExercises: Exercise[],
-  key?: React.Key 
-}) {
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const daysMap = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-
+function SettingsView({ onBack }: { onBack: () => void, key?: React.Key }) {
   return (
-    <>
-      <style>
-        {`
-          @media print {
-            /* Hide everything by default */
-            body > *:not(#printable-area) {
-              display: none !important;
-            }
-
-            /* Reset body styles */
-            body {
-              margin: 0;
-              padding: 0;
-              background: white;
-            }
-
-            /* Show printable area */
-            #printable-area {
-              display: block !important;
-              position: absolute;
-              top: 0;
-              left: 0;
-              width: 100%;
-              margin: 0;
-              padding: 20px;
-              background: white;
-              color: black;
-              z-index: 9999;
-            }
-
-            /* Ensure content fits on page */
-            @page {
-              size: A4;
-              margin: 10mm;
-            }
-          }
-        `}
-      </style>
-      
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
-        className="p-6 pt-12 space-y-8 pb-32 print:hidden"
-      >
-        <header className="flex items-center gap-4">
-          <button 
-            onClick={onBack}
-            className="p-2 bg-zinc-800 rounded-full text-zinc-300 hover:text-white hover:bg-zinc-700 transition-colors"
-          >
-            <ChevronRight className="rotate-180" size={20} />
-          </button>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight mb-1">Configurações</h1>
-            <p className="text-zinc-400">Preferências do aplicativo.</p>
-          </div>
-        </header>
-
-        <div className="space-y-4">
-           <button 
-            onClick={handlePrint}
-            className="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-2xl flex items-center justify-between hover:border-brand-500 transition-colors group"
-           >
-             <div className="flex items-center gap-4">
-               <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-brand-500 group-hover:bg-brand-500 group-hover:text-white transition-colors">
-                 <Printer size={20} />
-               </div>
-               <div className="text-left">
-                 <h3 className="font-semibold text-zinc-200">Imprimir Treino Semanal</h3>
-                 <p className="text-sm text-zinc-500">Gerar PDF compacto para impressão</p>
-               </div>
-             </div>
-             <ChevronRight className="text-zinc-600 group-hover:text-zinc-300" size={20} />
-           </button>
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="p-6 pt-12 space-y-8 pb-32"
+    >
+      <header className="flex items-center gap-4">
+        <button 
+          onClick={onBack}
+          className="p-2 bg-zinc-800 rounded-full text-zinc-300 hover:text-white hover:bg-zinc-700 transition-colors"
+        >
+          <ChevronRight className="rotate-180" size={20} />
+        </button>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight mb-1">Configurações</h1>
+          <p className="text-zinc-400">Preferências do aplicativo.</p>
         </div>
+      </header>
 
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center space-y-4">
-          <Settings className="mx-auto text-zinc-600" size={48} />
-          <h3 className="text-xl font-semibold text-zinc-300">Mais Opções</h3>
-          <p className="text-zinc-500 max-w-xs mx-auto">
-            Novas opções de personalização e ajustes estarão disponíveis em breve.
-          </p>
-        </div>
-      </motion.div>
-
-      {/* Printable View (Portal to Body) */}
-      {createPortal(
-        <div id="printable-area">
-          <style>
-            {`
-              /* Default state: hidden */
-              #printable-area {
-                display: none;
-              }
-
-              @media print {
-                /* Hide the main app */
-                #root {
-                  display: none !important;
-                }
-
-                /* Show the printable area */
-                #printable-area {
-                  display: block !important;
-                  position: absolute;
-                  top: 0;
-                  left: 0;
-                  width: 100%;
-                  height: auto;
-                  background: white;
-                  color: black;
-                  z-index: 9999;
-                }
-
-                /* Page setup */
-                @page {
-                  size: A4;
-                  margin: 10mm;
-                }
-
-                /* Reset body */
-                body {
-                  margin: 0;
-                  padding: 0;
-                  background: white;
-                }
-              }
-            `}
-          </style>
-          <div className="bg-white text-black font-sans p-8">
-            <h1 className="text-xl font-bold mb-4 text-center border-b pb-2 uppercase tracking-wide">Cronograma de Treinos - IronTrack</h1>
-            <div className="grid grid-cols-2 gap-4 text-xs">
-              {daysMap.map((dayName, index) => {
-                const dayPlans = plans.filter(p => p.daysOfWeek.includes(index));
-                if (dayPlans.length === 0) return null;
-
-                return (
-                  <div key={index} className="border border-gray-300 rounded-lg p-3 break-inside-avoid bg-gray-50 page-break-inside-avoid">
-                    <h3 className="font-bold text-sm bg-gray-200 p-1 rounded mb-2 text-center uppercase">{dayName}</h3>
-                    {dayPlans.map(plan => (
-                      <div key={plan.id} className="mb-3 last:mb-0">
-                        <div className="font-bold text-xs mb-1 text-blue-800 uppercase tracking-tight">{plan.name}</div>
-                        <ul className="space-y-1">
-                          {plan.exercises.map(ex => {
-                            const exerciseDef = availableExercises.find(e => e.id === ex.exerciseId);
-                            return (
-                              <li key={ex.id} className="flex flex-col border-b border-gray-200 pb-1 last:border-0">
-                                <span className="font-semibold truncate">{exerciseDef?.name || 'Exercício'}</span>
-                                <div className="pl-2 text-gray-600 font-mono text-[10px]">
-                                  {ex.sets.map((s, i) => (
-                                    <span key={i} className="mr-2">
-                                      {s.reps}x{s.weight}kg
-                                    </span>
-                                  ))}
-                                </div>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })}
-            </div>
-            <div className="mt-4 text-center text-[10px] text-gray-400 uppercase tracking-widest">
-              Gerado por IronTrack
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-    </>
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center space-y-4">
+        <Settings className="mx-auto text-zinc-600" size={48} />
+        <h3 className="text-xl font-semibold text-zinc-300">Em Breve</h3>
+        <p className="text-zinc-500 max-w-xs mx-auto">
+          Novas opções de personalização e ajustes estarão disponíveis aqui.
+        </p>
+      </div>
+    </motion.div>
   );
 }
 
@@ -2715,10 +2554,10 @@ function ProfileView({ profile, onSave, onLogout }: { profile: UserProfile, onSa
 
         <button 
           onClick={onLogout}
-          className="w-full py-4 bg-transparent text-red-500 hover:bg-zinc-900 rounded-xl font-medium text-xl transition-colors flex items-center justify-center gap-3"
+          className="w-full py-4 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
         >
-          <LogOut size={28} />
-          Sair
+          <RotateCcw size={20} />
+          Sair da Conta
         </button>
       </div>
     </motion.div>
