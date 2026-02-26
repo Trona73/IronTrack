@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User, TrendingUp, RotateCcw, BarChart2, Settings, LogOut } from 'lucide-react';
+import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User, TrendingUp, RotateCcw, BarChart2, Settings, LogOut, Printer } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 import { WorkoutPlan, WorkoutSession, Exercise, PlannedExercise, CompletedSet, CompletedExercise, UserProfile, Equipment, MuscleGroup } from './types';
@@ -355,6 +355,8 @@ export default function App() {
                 <SettingsView 
                   key="settings"
                   onBack={() => setCurrentView('dashboard')}
+                  plans={plans}
+                  availableExercises={exercises}
                 />
               )}
               {currentView === 'weekly-schedule' && dayToEdit !== null && (
@@ -2323,35 +2325,137 @@ function ExercisesView({
 }
 
 // --- Settings View ---
-function SettingsView({ onBack }: { onBack: () => void, key?: React.Key }) {
-  return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="p-6 pt-12 space-y-8 pb-32"
-    >
-      <header className="flex items-center gap-4">
-        <button 
-          onClick={onBack}
-          className="p-2 bg-zinc-800 rounded-full text-zinc-300 hover:text-white hover:bg-zinc-700 transition-colors"
-        >
-          <ChevronRight className="rotate-180" size={20} />
-        </button>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight mb-1">Configurações</h1>
-          <p className="text-zinc-400">Preferências do aplicativo.</p>
-        </div>
-      </header>
+function SettingsView({ 
+  onBack, 
+  plans, 
+  availableExercises 
+}: { 
+  onBack: () => void, 
+  plans: WorkoutPlan[], 
+  availableExercises: Exercise[],
+  key?: React.Key 
+}) {
+  const handlePrint = () => {
+    window.print();
+  };
 
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center space-y-4">
-        <Settings className="mx-auto text-zinc-600" size={48} />
-        <h3 className="text-xl font-semibold text-zinc-300">Em Breve</h3>
-        <p className="text-zinc-500 max-w-xs mx-auto">
-          Novas opções de personalização e ajustes estarão disponíveis aqui.
-        </p>
+  const daysMap = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+
+  return (
+    <>
+      <style>
+        {`
+          @media print {
+            body * {
+              visibility: hidden;
+            }
+            #printable-area, #printable-area * {
+              visibility: visible;
+            }
+            #printable-area {
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 100%;
+              height: 50vh; /* Occupy half A4 roughly */
+              overflow: hidden;
+            }
+            @page {
+              size: A4;
+              margin: 1cm;
+            }
+          }
+        `}
+      </style>
+      
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        className="p-6 pt-12 space-y-8 pb-32 print:hidden"
+      >
+        <header className="flex items-center gap-4">
+          <button 
+            onClick={onBack}
+            className="p-2 bg-zinc-800 rounded-full text-zinc-300 hover:text-white hover:bg-zinc-700 transition-colors"
+          >
+            <ChevronRight className="rotate-180" size={20} />
+          </button>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight mb-1">Configurações</h1>
+            <p className="text-zinc-400">Preferências do aplicativo.</p>
+          </div>
+        </header>
+
+        <div className="space-y-4">
+           <button 
+            onClick={handlePrint}
+            className="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-2xl flex items-center justify-between hover:border-brand-500 transition-colors group"
+           >
+             <div className="flex items-center gap-4">
+               <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-brand-500 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                 <Printer size={20} />
+               </div>
+               <div className="text-left">
+                 <h3 className="font-semibold text-zinc-200">Imprimir Treino Semanal</h3>
+                 <p className="text-sm text-zinc-500">Gerar PDF compacto para impressão</p>
+               </div>
+             </div>
+             <ChevronRight className="text-zinc-600 group-hover:text-zinc-300" size={20} />
+           </button>
+        </div>
+
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center space-y-4">
+          <Settings className="mx-auto text-zinc-600" size={48} />
+          <h3 className="text-xl font-semibold text-zinc-300">Mais Opções</h3>
+          <p className="text-zinc-500 max-w-xs mx-auto">
+            Novas opções de personalização e ajustes estarão disponíveis em breve.
+          </p>
+        </div>
+      </motion.div>
+
+      {/* Printable View (Hidden on Screen) */}
+      <div id="printable-area" className="hidden print:block bg-white text-black p-4 font-sans">
+        <h1 className="text-xl font-bold mb-4 text-center border-b pb-2 uppercase tracking-wide">Cronograma de Treinos - IronTrack</h1>
+        <div className="grid grid-cols-2 gap-4 text-xs">
+          {daysMap.map((dayName, index) => {
+            const dayPlans = plans.filter(p => p.daysOfWeek.includes(index));
+            if (dayPlans.length === 0) return null;
+
+            return (
+              <div key={index} className="border border-gray-300 rounded-lg p-3 break-inside-avoid bg-gray-50">
+                <h3 className="font-bold text-sm bg-gray-200 p-1 rounded mb-2 text-center uppercase">{dayName}</h3>
+                {dayPlans.map(plan => (
+                  <div key={plan.id} className="mb-3 last:mb-0">
+                    <div className="font-bold text-xs mb-1 text-blue-800 uppercase tracking-tight">{plan.name}</div>
+                    <ul className="space-y-1">
+                      {plan.exercises.map(ex => {
+                        const exerciseDef = availableExercises.find(e => e.id === ex.exerciseId);
+                        return (
+                          <li key={ex.id} className="flex flex-col border-b border-gray-200 pb-1 last:border-0">
+                            <span className="font-semibold truncate">{exerciseDef?.name || 'Exercício'}</span>
+                            <div className="pl-2 text-gray-600 font-mono text-[10px]">
+                              {ex.sets.map((s, i) => (
+                                <span key={i} className="mr-2">
+                                  {s.reps}x{s.weight}kg
+                                </span>
+                              ))}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-4 text-center text-[10px] text-gray-400 uppercase tracking-widest">
+          Gerado por IronTrack
+        </div>
       </div>
-    </motion.div>
+    </>
   );
 }
 
