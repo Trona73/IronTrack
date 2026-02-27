@@ -2,7 +2,7 @@ const CACHE_NAME = 'irontrack-v1';
 const urlsToCache = [
   '/',
   '/index.html',
-  '/icon.svg'
+  '/icon.png'
 ];
 
 self.addEventListener('install', (event) => {
