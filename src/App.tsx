@@ -2765,6 +2765,10 @@ function ProfileView({ profile, onSave, onLogout }: { profile: UserProfile, onSa
           </div>
         </div>
 
+        <div className="text-xs text-brand-500 text-center opacity-80 px-4">
+          <p>Os valores informados (IMC, TMB e metas calóricas) são estimativas referenciais e puramente indicativas. Estes dados não substituem diagnósticos médicos ou prescrições profissionais personalizadas.</p>
+        </div>
+
         <button 
           onClick={onLogout}
           className="w-full py-4 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
