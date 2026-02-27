@@ -690,6 +690,48 @@ function DashboardView({
   const daysMap = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
   const fullDaysMap = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
+  const getDayDate = (dayIndex: number) => {
+    const now = new Date();
+    const currentDay = now.getDay(); // 0-6, 0 is Sun
+    const daysSinceMonday = currentDay === 0 ? 6 : currentDay - 1;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - daysSinceMonday);
+    monday.setHours(0, 0, 0, 0);
+  
+    const target = new Date(monday);
+    let offset = 0;
+    
+    if (dayIndex === 0) offset = 6; // Sunday Week 1
+    else if (dayIndex === 7) offset = 13; // Sunday Week 2
+    else if (dayIndex >= 1 && dayIndex <= 6) offset = dayIndex - 1; // Mon-Sat Week 1
+    else if (dayIndex >= 8 && dayIndex <= 13) offset = dayIndex - 1; // Mon-Sat Week 2
+    
+    target.setDate(monday.getDate() + offset);
+    return target;
+  };
+
+  const getDayStatus = (dayIndex: number, dayPlans: WorkoutPlan[]) => {
+    if (dayPlans.length === 0) return { isCompleted: false, isMissed: false };
+    
+    const date = getDayDate(dayIndex);
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    
+    const isCompleted = dayPlans.some(plan => {
+      return sessions.some(s => {
+        const sDate = new Date(s.startTime);
+        return s.planId === plan.id && 
+               sDate.getDate() === date.getDate() &&
+               sDate.getMonth() === date.getMonth() &&
+               sDate.getFullYear() === date.getFullYear();
+      });
+    });
+  
+    const isMissed = !isCompleted && date < now;
+  
+    return { isCompleted, isMissed };
+  };
+
   const isPlanCompletedToday = (planId: string) => {
     if (reactivatedPlans.includes(planId)) return false;
     const now = new Date();
@@ -799,21 +841,35 @@ function DashboardView({
               <div className="grid grid-cols-1 gap-2">
                 {[1, 2, 3, 4, 5, 6, 0].map(day => { // Start from Monday (1) to Sunday (0)
                   const dayPlans = plans.filter(p => p.daysOfWeek.includes(day));
+                  const { isCompleted, isMissed } = getDayStatus(day, dayPlans);
+                  
                   return (
-                    <div key={day} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3 flex items-center justify-between">
+                    <div key={day} className={`bg-zinc-900 border border-zinc-800 rounded-xl p-3 flex items-center justify-between transition-all ${isCompleted || isMissed || dayPlans.length === 0 ? 'opacity-60' : ''}`}>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3">
                           <h3 className="font-bold text-brand-500 shrink-0 w-24">{fullDaysMap[day]}</h3>
                           <div className="flex-1 min-w-0 flex flex-wrap gap-x-3 gap-y-1 items-center">
                             {dayPlans.length > 0 ? (
-                              dayPlans.map(plan => (
-                                <span key={plan.id} className="text-zinc-400 text-xs truncate flex items-center gap-1">
-                                  <div className="w-1 h-1 rounded-full bg-brand-500/50" />
-                                  {plan.name}
-                                </span>
-                              ))
+                              <>
+                                {dayPlans.map(plan => (
+                                  <span key={plan.id} className="text-zinc-400 text-xs truncate flex items-center gap-1">
+                                    <div className="w-1 h-1 rounded-full bg-brand-500/50" />
+                                    {plan.name}
+                                  </span>
+                                ))}
+                                {isMissed && (
+                                  <span className="text-red-500 text-[10px] font-bold uppercase tracking-wider ml-2">
+                                    Treino não realizado
+                                  </span>
+                                )}
+                                {isCompleted && (
+                                  <span className="text-green-500 text-[10px] font-bold uppercase tracking-wider ml-2">
+                                    Treino Finalizado
+                                  </span>
+                                )}
+                              </>
                             ) : (
-                              <span className="text-zinc-700 text-xs italic">Descanso</span>
+                              <span className="text-brand-500 text-xs italic">Descanso</span>
                             )}
                           </div>
                         </div>
@@ -855,21 +911,35 @@ function DashboardView({
               <div className="grid grid-cols-1 gap-2">
                 {[8, 9, 10, 11, 12, 13, 7].map(day => { // Start from Monday (8) to Sunday (7)
                   const dayPlans = plans.filter(p => p.daysOfWeek.includes(day));
+                  const { isCompleted, isMissed } = getDayStatus(day, dayPlans);
+
                   return (
-                    <div key={day} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3 flex items-center justify-between">
+                    <div key={day} className={`bg-zinc-900 border border-zinc-800 rounded-xl p-3 flex items-center justify-between transition-all ${isCompleted || isMissed || dayPlans.length === 0 ? 'opacity-60' : ''}`}>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3">
                           <h3 className="font-bold text-brand-500 shrink-0 w-24">{fullDaysMap[day % 7]}</h3>
                           <div className="flex-1 min-w-0 flex flex-wrap gap-x-3 gap-y-1 items-center">
                             {dayPlans.length > 0 ? (
-                              dayPlans.map(plan => (
-                                <span key={plan.id} className="text-zinc-400 text-xs truncate flex items-center gap-1">
-                                  <div className="w-1 h-1 rounded-full bg-brand-500/50" />
-                                  {plan.name}
-                                </span>
-                              ))
+                              <>
+                                {dayPlans.map(plan => (
+                                  <span key={plan.id} className="text-zinc-400 text-xs truncate flex items-center gap-1">
+                                    <div className="w-1 h-1 rounded-full bg-brand-500/50" />
+                                    {plan.name}
+                                  </span>
+                                ))}
+                                {isMissed && (
+                                  <span className="text-red-500 text-[10px] font-bold uppercase tracking-wider ml-2">
+                                    Treino não realizado
+                                  </span>
+                                )}
+                                {isCompleted && (
+                                  <span className="text-green-500 text-[10px] font-bold uppercase tracking-wider ml-2">
+                                    Treino Finalizado
+                                  </span>
+                                )}
+                              </>
                             ) : (
-                              <span className="text-zinc-700 text-xs italic">Descanso</span>
+                              <span className="text-brand-500 text-xs italic">Descanso</span>
                             )}
                           </div>
                         </div>
