@@ -908,7 +908,7 @@ function DashboardView({
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden"
             >
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {plans.map(plan => (
                   <PlanCard 
                     key={plan.id} 
@@ -917,6 +917,7 @@ function DashboardView({
                     onStart={() => onStartWorkout(plan)} 
                     onEdit={() => onEditPlan(plan)}
                     onDelete={() => onDeletePlan(plan.id)}
+                    compact={true}
                   />
                 ))}
               </div>
@@ -1107,68 +1108,101 @@ function WeeklyScheduleView({
   );
 }
 
-function PlanCard({ plan, availableExercises, onStart, onEdit, onDelete, isCompleted, onActivate }: { plan: WorkoutPlan, availableExercises: Exercise[], onStart: () => void, onEdit: () => void, onDelete: () => void, isCompleted?: boolean, onActivate?: () => void, key?: React.Key }) {
+function PlanCard({ plan, availableExercises, onStart, onEdit, onDelete, isCompleted, onActivate, compact = false }: { plan: WorkoutPlan, availableExercises: Exercise[], onStart: () => void, onEdit: () => void, onDelete: () => void, isCompleted?: boolean, onActivate?: () => void, compact?: boolean, key?: React.Key }) {
   const daysMap = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
   
   return (
-    <div className={`bg-zinc-900 border border-zinc-800 rounded-2xl p-5 transition-colors group relative ${isCompleted ? 'opacity-50' : 'hover:border-brand-500/30'}`}>
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <h3 className={`font-bold text-lg ${isCompleted ? 'line-through decoration-zinc-500' : ''}`}>{plan.name}</h3>
-          <div className="flex gap-2 mt-2">
-            {plan.daysOfWeek.map(d => (
-              <span key={d} className="text-xs font-mono bg-zinc-800 text-zinc-300 px-2 py-1 rounded-md">
-                {daysMap[d]}
-              </span>
-            ))}
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <button 
-            onClick={(e) => { e.stopPropagation(); onEdit(); }}
-            className="text-zinc-500 hover:text-zinc-300 p-2 rounded-full hover:bg-zinc-800 transition-colors"
-          >
-            <Pencil size={18} />
-          </button>
-          <button 
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            className="text-zinc-500 hover:text-red-400 p-2 rounded-full hover:bg-zinc-800 transition-colors"
-          >
-            <Trash2 size={18} />
-          </button>
-          {isCompleted && onActivate ? (
-            <button 
-              onClick={onActivate}
-              className="bg-zinc-800 text-brand-500 p-3 rounded-full hover:bg-zinc-700 hover:text-brand-400 transition-colors ml-2"
-              title="Repetir Treino"
-            >
-              <RotateCcw size={20} />
-            </button>
-          ) : (
-            <button 
-              onClick={onStart}
-              className="bg-brand-500 text-zinc-950 p-3 rounded-full hover:bg-brand-400 transition-transform active:scale-95 ml-2"
-            >
-              <Play size={20} className="fill-current" />
-            </button>
+    <div className={`bg-zinc-900 border border-zinc-800 rounded-2xl ${compact ? 'p-4' : 'p-5'} transition-colors group relative ${isCompleted ? 'opacity-50' : 'hover:border-brand-500/30'}`}>
+      <div className={`flex justify-between items-start ${compact ? 'mb-2' : 'mb-4'}`}>
+        <div className={compact ? "flex-1 min-w-0 mr-2" : ""}>
+          <h3 className={`font-bold ${compact ? 'text-base' : 'text-lg'} ${isCompleted ? 'line-through decoration-zinc-500' : ''}`}>{plan.name}</h3>
+          {!compact && (
+            <div className="flex gap-2 mt-1">
+              {plan.daysOfWeek.map(d => (
+                <span key={d} className="text-[10px] font-mono bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded-md">
+                  {daysMap[d]}
+                </span>
+              ))}
+            </div>
           )}
+        </div>
+        <div className="flex items-center gap-2">
+          {compact && (
+            <div className="flex gap-1 mr-1">
+              {plan.daysOfWeek.map(d => (
+                <span key={d} className="text-[10px] font-mono bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded-md">
+                  {daysMap[d]}
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="flex gap-1">
+            <button 
+              onClick={(e) => { e.stopPropagation(); onEdit(); }}
+              className={`text-zinc-500 hover:text-zinc-300 ${compact ? 'p-1.5' : 'p-2'} rounded-full hover:bg-zinc-800 transition-colors`}
+            >
+              <Pencil size={compact ? 16 : 18} />
+            </button>
+            <button 
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              className={`text-zinc-500 hover:text-red-400 ${compact ? 'p-1.5' : 'p-2'} rounded-full hover:bg-zinc-800 transition-colors`}
+            >
+              <Trash2 size={compact ? 16 : 18} />
+            </button>
+            {isCompleted && onActivate ? (
+              <button 
+                onClick={onActivate}
+                className={`bg-zinc-800 text-brand-500 ${compact ? 'p-2' : 'p-3'} rounded-full hover:bg-zinc-700 hover:text-brand-400 transition-colors ml-1`}
+                title="Repetir Treino"
+              >
+                <RotateCcw size={compact ? 16 : 20} />
+              </button>
+            ) : (
+              <button 
+                onClick={onStart}
+                className={`bg-brand-500 text-zinc-950 ${compact ? 'p-2' : 'p-3'} rounded-full hover:bg-brand-400 transition-transform active:scale-95 ml-1`}
+              >
+                <Play size={compact ? 16 : 20} className="fill-current" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
       
-      <div className="space-y-1">
-        {plan.exercises.map((ex, index) => {
-          const exerciseName = availableExercises.find(e => e.id === ex.exerciseId)?.name || 'Exercício desconhecido';
-          return (
-            <div key={ex.id} className="text-sm text-zinc-400 flex items-center gap-2">
-              <span className="text-zinc-600 font-mono text-xs w-4 text-right">{index + 1}.</span>
-              <span>{exerciseName}</span>
+      {compact ? (
+        <div className="text-xs text-zinc-400 leading-relaxed">
+          {plan.exercises.length > 0 ? (
+            <div className="flex flex-wrap gap-x-3 gap-y-1">
+              {plan.exercises.map((ex, index) => {
+                const exerciseName = availableExercises.find(e => e.id === ex.exerciseId)?.name || 'Exercício desconhecido';
+                return (
+                  <span key={ex.id} className="flex items-center gap-1">
+                     <span className="w-1 h-1 rounded-full bg-zinc-600"></span>
+                     {exerciseName}
+                  </span>
+                );
+              })}
             </div>
-          );
-        })}
-        {plan.exercises.length === 0 && (
-          <div className="text-sm text-zinc-500 italic">Nenhum exercício</div>
-        )}
-      </div>
+          ) : (
+            <span className="italic text-zinc-600">Nenhum exercício</span>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-1">
+          {plan.exercises.map((ex, index) => {
+            const exerciseName = availableExercises.find(e => e.id === ex.exerciseId)?.name || 'Exercício desconhecido';
+            return (
+              <div key={ex.id} className="text-sm text-zinc-400 flex items-center gap-2">
+                <span className="text-zinc-600 font-mono text-xs w-4 text-right">{index + 1}.</span>
+                <span>{exerciseName}</span>
+              </div>
+            );
+          })}
+          {plan.exercises.length === 0 && (
+            <div className="text-sm text-zinc-500 italic">Nenhum exercício</div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
