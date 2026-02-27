@@ -680,10 +680,11 @@ function DashboardView({
   key?: React.Key 
 }) {
   const today = new Date().getDay();
-  const todaysPlans = plans.filter(p => p.daysOfWeek.includes(today));
+  const todaysPlans = plans.filter(p => p.daysOfWeek.includes(today) || p.daysOfWeek.includes(today + 7));
   const [time, setTime] = useState(new Date());
   const [showPlanSelector, setShowPlanSelector] = useState(false);
-  const [isWeeklyExpanded, setIsWeeklyExpanded] = useState(true);
+  const [isWeek1Expanded, setIsWeek1Expanded] = useState(true);
+  const [isWeek2Expanded, setIsWeek2Expanded] = useState(true);
   const [isAllWorkoutsExpanded, setIsAllWorkoutsExpanded] = useState(true);
   const [reactivatedPlans, setReactivatedPlans] = useState<string[]>([]);
   const daysMap = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -778,49 +779,107 @@ function DashboardView({
 
       <section>
         <button 
-          onClick={() => setIsWeeklyExpanded(!isWeeklyExpanded)}
+          onClick={() => setIsWeek1Expanded(!isWeek1Expanded)}
           className="w-full flex items-center justify-between mb-4 group"
         >
-          <h2 className="text-xl font-semibold">Treino da Semana</h2>
+          <h2 className="text-xl font-semibold">Semana 01</h2>
           <ChevronRight 
-            className={`text-zinc-500 group-hover:text-zinc-300 transition-transform duration-200 ${isWeeklyExpanded ? 'rotate-90' : ''}`} 
+            className={`text-zinc-500 group-hover:text-zinc-300 transition-transform duration-200 ${isWeek1Expanded ? 'rotate-90' : ''}`} 
             size={20} 
           />
         </button>
         <AnimatePresence>
-          {isWeeklyExpanded && (
+          {isWeek1Expanded && (
             <motion.div 
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden"
             >
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 gap-2">
                 {[1, 2, 3, 4, 5, 6, 0].map(day => { // Start from Monday (1) to Sunday (0)
                   const dayPlans = plans.filter(p => p.daysOfWeek.includes(day));
                   return (
-                    <div key={day} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
-                      <div className="flex justify-between items-start mb-3">
-                        <h3 className="font-bold text-lg text-brand-500">{fullDaysMap[day]}</h3>
-                        <button 
-                          onClick={() => onEditDay(day)}
-                          className="text-zinc-500 hover:text-zinc-300 p-2 rounded-full hover:bg-zinc-800 transition-colors"
-                        >
-                          <Pencil size={18} />
-                        </button>
-                      </div>
-                      {dayPlans.length > 0 ? (
-                        <div className="space-y-2">
-                          {dayPlans.map(plan => (
-                            <div key={plan.id} className="text-zinc-300 text-sm flex items-center gap-2">
-                              <div className="w-1.5 h-1.5 rounded-full bg-brand-500/50" />
-                              {plan.name}
-                            </div>
-                          ))}
+                    <div key={day} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3 flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3">
+                          <h3 className="font-bold text-brand-500 shrink-0 w-24">{fullDaysMap[day]}</h3>
+                          <div className="flex-1 min-w-0 flex flex-wrap gap-x-3 gap-y-1 items-center">
+                            {dayPlans.length > 0 ? (
+                              dayPlans.map(plan => (
+                                <span key={plan.id} className="text-zinc-400 text-xs truncate flex items-center gap-1">
+                                  <div className="w-1 h-1 rounded-full bg-brand-500/50" />
+                                  {plan.name}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-zinc-700 text-xs italic">Descanso</span>
+                            )}
+                          </div>
                         </div>
-                      ) : (
-                        <p className="text-zinc-600 text-sm italic">Descanso</p>
-                      )}
+                      </div>
+                      <button 
+                        onClick={() => onEditDay(day)}
+                        className="text-zinc-600 hover:text-zinc-300 p-1.5 ml-2 rounded-full hover:bg-zinc-800 transition-colors"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </section>
+
+      <section>
+        <button 
+          onClick={() => setIsWeek2Expanded(!isWeek2Expanded)}
+          className="w-full flex items-center justify-between mb-4 group"
+        >
+          <h2 className="text-xl font-semibold">Semana 02</h2>
+          <ChevronRight 
+            className={`text-zinc-500 group-hover:text-zinc-300 transition-transform duration-200 ${isWeek2Expanded ? 'rotate-90' : ''}`} 
+            size={20} 
+          />
+        </button>
+        <AnimatePresence>
+          {isWeek2Expanded && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="grid grid-cols-1 gap-2">
+                {[8, 9, 10, 11, 12, 13, 7].map(day => { // Start from Monday (8) to Sunday (7)
+                  const dayPlans = plans.filter(p => p.daysOfWeek.includes(day));
+                  return (
+                    <div key={day} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3 flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3">
+                          <h3 className="font-bold text-brand-500 shrink-0 w-24">{fullDaysMap[day % 7]}</h3>
+                          <div className="flex-1 min-w-0 flex flex-wrap gap-x-3 gap-y-1 items-center">
+                            {dayPlans.length > 0 ? (
+                              dayPlans.map(plan => (
+                                <span key={plan.id} className="text-zinc-400 text-xs truncate flex items-center gap-1">
+                                  <div className="w-1 h-1 rounded-full bg-brand-500/50" />
+                                  {plan.name}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-zinc-700 text-xs italic">Descanso</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => onEditDay(day)}
+                        className="text-zinc-600 hover:text-zinc-300 p-1.5 ml-2 rounded-full hover:bg-zinc-800 transition-colors"
+                      >
+                        <Pencil size={16} />
+                      </button>
                     </div>
                   );
                 })}
@@ -975,7 +1034,9 @@ function WeeklyScheduleView({
         </button>
         <div>
           <h1 className="text-2xl font-bold">Editar Agenda</h1>
-          <p className="text-brand-500 font-medium">{fullDaysMap[day]}</p>
+          <p className="text-brand-500 font-medium">
+            {day > 6 ? `Semana 02 - ${fullDaysMap[day % 7]}` : `Semana 01 - ${fullDaysMap[day]}`}
+          </p>
         </div>
       </header>
 
