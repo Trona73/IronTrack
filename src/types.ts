@@ -43,6 +43,10 @@ export interface CompletedExercise {
   durationSeconds: number;
 }
 
+export type ActivityLevel = 'sedentary' | 'lightly_active' | 'moderately_active' | 'very_active' | 'extremely_active';
+
+export type Goal = 'maintenance' | 'weight_loss' | 'muscle_gain';
+
 export interface UserProfile {
   name: string;
   email?: string;
@@ -51,6 +55,8 @@ export interface UserProfile {
   height: number;
   age: number;
   gender: 'male' | 'female' | 'other';
+  activityLevel?: ActivityLevel;
+  goal?: Goal;
   photoUrl?: string;
 }
 

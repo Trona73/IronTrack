@@ -2662,6 +2662,58 @@ function ProfileView({ profile, onSave, onLogout }: { profile: UserProfile, onSa
               )}
             </div>
           </div>
+
+          <div>
+            <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Condição Física</label>
+            {isEditing ? (
+              <select 
+                value={localProfile.activityLevel || ''}
+                onChange={e => handleChange('activityLevel', e.target.value)}
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors appearance-none"
+              >
+                <option value="">-- selecionar --</option>
+                <option value="sedentary">Sedentário (pouco/nenhum exercício)</option>
+                <option value="lightly_active">Levemente ativo (atividade até 2 dias/sem)</option>
+                <option value="moderately_active">Moderadamente ativo (atividade até 4 dias/sem)</option>
+                <option value="very_active">Muito ativo (atividade até 6 dias/sem)</option>
+                <option value="extremely_active">Extremamente ativo (atividade 7 dias/sem)</option>
+              </select>
+            ) : (
+              <div className="text-xl font-medium">
+                {{
+                  sedentary: 'Sedentário (pouco/nenhum exercício)',
+                  lightly_active: 'Levemente ativo (atividade até 2 dias/sem)',
+                  moderately_active: 'Moderadamente ativo (atividade até 4 dias/sem)',
+                  very_active: 'Muito ativo (atividade até 6 dias/sem)',
+                  extremely_active: 'Extremamente ativo (atividade 7 dias/sem)'
+                }[profile.activityLevel || ''] || '-- selecionar --'}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Defina o Objetivo</label>
+            {isEditing ? (
+              <select 
+                value={localProfile.goal || ''}
+                onChange={e => handleChange('goal', e.target.value)}
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors appearance-none"
+              >
+                <option value="">-- selecionar --</option>
+                <option value="maintenance">Manutenção</option>
+                <option value="weight_loss">Perda de Peso</option>
+                <option value="muscle_gain">Ganho de Massa</option>
+              </select>
+            ) : (
+              <div className="text-xl font-medium">
+                {{
+                  maintenance: 'Manutenção',
+                  weight_loss: 'Perda de Peso',
+                  muscle_gain: 'Ganho de Massa'
+                }[profile.goal || ''] || '-- selecionar --'}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Stats Summary */}
@@ -2675,9 +2727,40 @@ function ProfileView({ profile, onSave, onLogout }: { profile: UserProfile, onSa
             </div>
           </div>
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
-            <div className="text-zinc-500 mb-2">Meta Diária</div>
+            <div className="text-zinc-500 mb-2">TMB (Basal)</div>
             <div className="text-2xl font-bold text-brand-400">
-              {profile.weight ? Math.round(profile.weight * 30) : '-'} <span className="text-sm text-zinc-500 font-normal">kcal</span>
+              {profile.weight && profile.height && profile.age
+                ? Math.round((10 * profile.weight) + (6.25 * profile.height) - (5 * profile.age) + (profile.gender === 'female' ? -161 : 5))
+                : '-'} <span className="text-sm text-zinc-500 font-normal">kcal</span>
+            </div>
+          </div>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 col-span-2">
+            <div className="text-zinc-500 mb-2">Meta Diária (Estimada)</div>
+            <div className="text-2xl font-bold text-brand-400">
+              {(() => {
+                if (!profile.weight || !profile.height || !profile.age) return '-';
+                
+                const bmr = (10 * profile.weight) + (6.25 * profile.height) - (5 * profile.age) + (profile.gender === 'female' ? -161 : 5);
+                
+                const multipliers: Record<string, number> = {
+                  sedentary: 1.2,
+                  lightly_active: 1.375,
+                  moderately_active: 1.55,
+                  very_active: 1.725,
+                  extremely_active: 1.9
+                };
+                
+                const multiplier = multipliers[profile.activityLevel || 'sedentary'] || 1.2;
+                let tdee = bmr * multiplier;
+
+                if (profile.goal === 'weight_loss') {
+                  tdee -= (profile.gender === 'female' ? 300 : 500);
+                } else if (profile.goal === 'muscle_gain') {
+                  tdee += (profile.gender === 'female' ? 300 : 500);
+                }
+                
+                return Math.round(tdee);
+              })()} <span className="text-sm text-zinc-500 font-normal">kcal</span>
             </div>
           </div>
         </div>
