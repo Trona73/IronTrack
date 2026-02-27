@@ -57,6 +57,8 @@ export interface UserProfile {
   gender: 'male' | 'female' | 'other';
   activityLevel?: ActivityLevel;
   goal?: Goal;
+  trainingStartDay?: number; // 0 = Sunday, 1 = Monday, etc.
+  weeklyTrainingGoal?: number; // 1-7 days per week
   photoUrl?: string;
 }
 

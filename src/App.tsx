@@ -485,6 +485,8 @@ export default function App() {
                 <SettingsView 
                   key="settings"
                   onBack={() => setCurrentView('dashboard')}
+                  profile={userProfile}
+                  onUpdateProfile={setUserProfile}
                 />
               )}
               {currentView === 'weekly-schedule' && dayToEdit !== null && (
@@ -2456,7 +2458,21 @@ function ExercisesView({
 }
 
 // --- Settings View ---
-function SettingsView({ onBack }: { onBack: () => void, key?: React.Key }) {
+function SettingsView({ onBack, profile, onUpdateProfile }: { onBack: () => void, profile: UserProfile, onUpdateProfile: (p: UserProfile) => void, key?: React.Key }) {
+  const days = [
+    { value: 1, label: 'Segunda-feira' },
+    { value: 2, label: 'Terça-feira' },
+    { value: 3, label: 'Quarta-feira' },
+    { value: 4, label: 'Quinta-feira' },
+    { value: 5, label: 'Sexta-feira' },
+    { value: 6, label: 'Sábado' },
+    { value: 0, label: 'Domingo' },
+  ];
+
+  const handleChangeStartDay = (day: number) => {
+    onUpdateProfile({ ...profile, trainingStartDay: day });
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -2477,12 +2493,49 @@ function SettingsView({ onBack }: { onBack: () => void, key?: React.Key }) {
         </div>
       </header>
 
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center space-y-4">
-        <Settings className="mx-auto text-zinc-600" size={48} />
-        <h3 className="text-xl font-semibold text-zinc-300">Em Breve</h3>
-        <p className="text-zinc-500 max-w-xs mx-auto">
-          Novas opções de personalização e ajustes estarão disponíveis aqui.
-        </p>
+      <div className="space-y-6">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-4">
+          <h3 className="text-lg font-semibold text-zinc-300 flex items-center gap-2">
+            <Calendar size={20} className="text-brand-500" />
+            Preferências de Treino
+          </h3>
+          
+          <div>
+            <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">
+              Dia de Início da Semana de Treino
+            </label>
+            <select 
+              value={profile.trainingStartDay !== undefined ? profile.trainingStartDay : 1}
+              onChange={(e) => handleChangeStartDay(parseInt(e.target.value))}
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors appearance-none"
+            >
+              {days.map(day => (
+                <option key={day.value} value={day.value}>{day.label}</option>
+              ))}
+            </select>
+            <p className="text-xs text-zinc-500 mt-2">
+              Define qual dia da semana inicia seu ciclo de treino semanal.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">
+              Objetivo de Treino (Frequência)
+            </label>
+            <select 
+              value={profile.weeklyTrainingGoal || 3}
+              onChange={(e) => onUpdateProfile({ ...profile, weeklyTrainingGoal: parseInt(e.target.value) })}
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors appearance-none"
+            >
+              {[1, 2, 3, 4, 5, 6, 7].map(days => (
+                <option key={days} value={days}>{days} {days === 1 ? 'dia' : 'dias'} por semana</option>
+              ))}
+            </select>
+            <p className="text-xs text-zinc-500 mt-2">
+              Quantos dias por semana você pretende treinar.
+            </p>
+          </div>
+        </div>
       </div>
     </motion.div>
   );
