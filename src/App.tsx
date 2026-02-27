@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User, TrendingUp, RotateCcw, BarChart2, Settings, GripVertical } from 'lucide-react';
+import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User, TrendingUp, RotateCcw, BarChart2, Settings, GripVertical, Check } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'motion/react';
 import { LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 import { WorkoutPlan, WorkoutSession, Exercise, PlannedExercise, CompletedSet, CompletedExercise, UserProfile, Equipment, MuscleGroup } from './types';
@@ -278,7 +278,7 @@ export default function App() {
     return false;
   };
 
-  const handleCreateAccount = async (profile: UserProfile) => {
+  const handleCreateAccount = async (profile: UserProfile): Promise<boolean> => {
     // Try Supabase signup
     if (profile.email && profile.password) {
       try {
@@ -294,17 +294,21 @@ export default function App() {
         if (error) {
           console.error('Supabase signup error:', error.message);
           alert('Erro ao criar conta no Supabase: ' + error.message);
-          return; // Don't proceed to local if Supabase fails (to avoid confusion)
+          return false; // Don't proceed to local if Supabase fails (to avoid confusion)
         }
         alert('Conta criada! Verifique seu email para confirmar.');
+        return true;
       } catch (e) {
         console.error(e);
+        return false;
       }
     }
 
+    // Local fallback (legacy)
     setUserProfile(profile);
     setIsAuthenticated(true);
     setShowAuth(false);
+    return true;
   };
 
   const handleLogout = async () => {
@@ -2533,7 +2537,7 @@ function ProfileView({ profile, onSave, onLogout }: { profile: UserProfile, onSa
               onClick={handleSave}
               className="p-2 bg-brand-500 rounded-full text-zinc-950 hover:bg-brand-400 transition-colors"
             >
-              <Save size={20} />
+              <Check size={20} />
             </button>
           </div>
         )}
@@ -2691,7 +2695,7 @@ function ProfileView({ profile, onSave, onLogout }: { profile: UserProfile, onSa
 }
 
 // --- Auth View ---
-function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (email: string, pass: string) => Promise<boolean>, onCreateAccount: (profile: UserProfile) => Promise<void>, existingProfile?: UserProfile, key?: React.Key }) {
+function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (email: string, pass: string) => Promise<boolean>, onCreateAccount: (profile: UserProfile) => Promise<boolean>, existingProfile?: UserProfile, key?: React.Key }) {
   const [isLoginMode, setIsLoginMode] = useState(!!existingProfile?.email);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -2721,7 +2725,7 @@ function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (ema
           setLoading(false);
           return;
         }
-        await onCreateAccount({
+        const success = await onCreateAccount({
           name,
           email,
           password,
@@ -2730,6 +2734,10 @@ function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (ema
           age: 0,
           gender: 'other'
         });
+        if (success) {
+           setIsLoginMode(true);
+           setError('Conta criada com sucesso! Faça login para continuar.');
+        }
       }
     } catch (err: any) {
       setError(err.message || 'Ocorreu um erro.');
@@ -2809,7 +2817,7 @@ function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (ema
             </div>
 
             {error && (
-              <div className="text-red-500 text-sm text-center bg-red-500/10 p-2 rounded-lg border border-red-500/20">
+              <div className="text-red-500 text-sm text-center bg-[#18181b] p-2 rounded-lg border border-[#18181b]">
                 {error}
               </div>
             )}
