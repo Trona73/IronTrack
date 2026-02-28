@@ -113,6 +113,23 @@ export const supabaseService = {
   },
 
   async deleteWorkoutPlan(planId: string): Promise<void> {
+    // 1. Delete related workout sessions first to avoid foreign key constraint error
+    const { error: sessionError } = await supabase
+      .from('workout_sessions')
+      .delete()
+      .eq('plan_id', planId);
+
+    if (sessionError) throw sessionError;
+
+    // 2. Delete related planned exercises
+    const { error: exerciseError } = await supabase
+      .from('planned_exercises')
+      .delete()
+      .eq('plan_id', planId);
+
+    if (exerciseError) throw exerciseError;
+
+    // 3. Delete the plan itself
     const { error } = await supabase
       .from('workout_plans')
       .delete()

@@ -1,0 +1,19 @@
+{
+  "name": "IronTrack - Sua Rotina de Força",
+  "short_name": "IronTrack",
+  "description": "Acompanhe seus treinos de força e progresso.",
+  "theme_color": "#18181b",
+  "background_color": "#18181b",
+  "display": "standalone",
+  "orientation: "portrait",
+  "start_url": "/",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
