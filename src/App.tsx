@@ -129,6 +129,16 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  const handleAuthError = (error: any) => {
+    console.error('Supabase error:', error);
+    if (error?.message?.includes('Refresh Token Not Found') || error?.message?.includes('Invalid Refresh Token')) {
+      supabase.auth.signOut();
+      setSupabaseSession(null);
+      setIsAuthenticated(false);
+      setShowAuth(true);
+    }
+  };
+
   const loadSupabaseData = async (userId: string) => {
     try {
       const plans = await supabaseService.getWorkoutPlans();
@@ -138,7 +148,7 @@ export default function App() {
         setExercises(exercises);
       }
     } catch (error) {
-      console.error('Error loading Supabase data:', error);
+      handleAuthError(error);
     }
   };
 
@@ -187,16 +197,42 @@ export default function App() {
 
     if (supabaseSession) {
       try {
-        const exists = plans.find(p => p.id === plan.id);
-        if (exists) {
-           await supabaseService.updateWorkoutPlan(plan);
+        // Ensure all exercises in the plan have valid UUIDs
+        const updatedExercises = await Promise.all(plan.exercises.map(async (pe) => {
+          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pe.exerciseId);
+          if (isUuid) return pe;
+
+          // Find the full exercise details
+          const exerciseDetails = exercises.find(e => e.id === pe.exerciseId);
+          if (!exerciseDetails) {
+            console.warn(`Exercise details not found for ID: ${pe.exerciseId}`);
+            return pe; // Can't fix it if we don't have details
+          }
+
+          // Get or create real UUID from Supabase
+          const realId = await supabaseService.ensureExercise(exerciseDetails);
+          
+          // Update local exercises list with the new ID to prevent future lookups
+          setExercises(prev => prev.map(e => e.id === pe.exerciseId ? { ...e, id: realId } : e));
+          
+          return { ...pe, exerciseId: realId };
+        }));
+
+        const planToSave = { ...plan, exercises: updatedExercises };
+
+        // Check if ID is a valid UUID (simple regex check)
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(planToSave.id);
+        
+        if (isUuid) {
+           await supabaseService.updateWorkoutPlan(planToSave);
         } else {
-           const newPlan = await supabaseService.createWorkoutPlan(plan, supabaseSession.user.id);
-           // Update with real ID from Supabase
-           setPlans(prev => prev.map(p => p.id === plan.id ? newPlan : p));
+           // If not a UUID (e.g. 'p1', 'p2'), create as new in Supabase
+           // and update local state with the real ID
+           const newPlan = await supabaseService.createWorkoutPlan(planToSave, supabaseSession.user.id);
+           setPlans(prev => prev.map(p => p.id === plan.id ? { ...newPlan, id: newPlan.id } : p));
         }
       } catch (e) {
-        console.error('Error saving to Supabase:', e);
+        handleAuthError(e);
       }
     }
   };
@@ -215,7 +251,7 @@ export default function App() {
         try {
           await supabaseService.deleteWorkoutPlan(id);
         } catch (e) {
-          console.error('Error deleting from Supabase:', e);
+          handleAuthError(e);
         }
       }
     }
@@ -242,7 +278,18 @@ export default function App() {
     if (supabaseSession) {
       const plan = updatedPlans.find(p => p.id === planId);
       if (plan) {
-        supabaseService.updateWorkoutPlan(plan).catch(console.error);
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(plan.id);
+        if (isUuid) {
+          supabaseService.updateWorkoutPlan(plan).catch(handleAuthError);
+        } else {
+           // If it's a mock plan (e.g. 'p1'), create it in Supabase
+           supabaseService.createWorkoutPlan(plan, supabaseSession.user.id)
+            .then(newPlan => {
+               // Replace the mock plan with the real one from DB
+               setPlans(prev => prev.map(p => p.id === plan.id ? newPlan : p));
+            })
+            .catch(handleAuthError);
+        }
       }
     }
   };
@@ -261,7 +308,7 @@ export default function App() {
       try {
         await supabaseService.saveWorkoutSession(session, supabaseSession.user.id);
       } catch (e) {
-        console.error('Error saving session to Supabase:', e);
+        handleAuthError(e);
       }
     }
   };
@@ -283,7 +330,7 @@ export default function App() {
       // If Supabase fails, fall back to local auth (legacy)
       console.log('Supabase login failed, trying local:', error.message);
     } catch (e) {
-      console.error(e);
+      handleAuthError(e);
     }
 
     if (userProfile.email === email && userProfile.password === pass) {
@@ -315,7 +362,7 @@ export default function App() {
         alert('Conta criada! Verifique seu email para confirmar.');
         return true;
       } catch (e) {
-        console.error(e);
+        handleAuthError(e);
         return false;
       }
     }

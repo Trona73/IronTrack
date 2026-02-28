@@ -11,6 +11,34 @@ export const supabaseService = {
     return data || [];
   },
 
+  async ensureExercise(exercise: Exercise): Promise<string> {
+    // 1. Try to find by name
+    const { data: existing } = await supabase
+      .from('exercises')
+      .select('id')
+      .eq('name', exercise.name)
+      .single();
+
+    if (existing) return existing.id;
+
+    // 2. If not found, create
+    const { data: newExercise, error } = await supabase
+      .from('exercises')
+      .insert({
+        name: exercise.name,
+        equipment: exercise.equipment,
+        muscle_group: exercise.muscleGroup,
+        description: exercise.description,
+        image_url: exercise.imageUrl,
+        video_url: exercise.videoUrl
+      })
+      .select('id')
+      .single();
+
+    if (error) throw error;
+    return newExercise.id;
+  },
+
   async getWorkoutPlans(): Promise<WorkoutPlan[]> {
     const { data: plans, error } = await supabase
       .from('workout_plans')
