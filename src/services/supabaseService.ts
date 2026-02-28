@@ -39,6 +39,31 @@ export const supabaseService = {
     return newExercise.id;
   },
 
+  async updateExercise(exercise: Exercise): Promise<void> {
+    const { error } = await supabase
+      .from('exercises')
+      .update({
+        name: exercise.name,
+        equipment: exercise.equipment,
+        muscle_group: exercise.muscleGroup,
+        description: exercise.description,
+        image_url: exercise.imageUrl,
+        video_url: exercise.videoUrl
+      })
+      .eq('id', exercise.id);
+
+    if (error) throw error;
+  },
+
+  async deleteExercise(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('exercises')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  },
+
   async getWorkoutPlans(): Promise<WorkoutPlan[]> {
     const { data: plans, error } = await supabase
       .from('workout_plans')

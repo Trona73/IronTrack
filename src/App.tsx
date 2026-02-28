@@ -171,16 +171,46 @@ export default function App() {
     }
   }, [plans, sessions, userProfile, exercises, muscleGroups, equipmentList]);
 
-  const addExercise = (exercise: Exercise) => {
+  const addExercise = async (exercise: Exercise) => {
+    // Optimistic update with temp ID
     setExercises(prev => [...prev, exercise]);
+
+    if (supabaseSession) {
+      try {
+        const realId = await supabaseService.ensureExercise(exercise);
+        // Update with real ID
+        setExercises(prev => prev.map(e => e.id === exercise.id ? { ...e, id: realId } : e));
+      } catch (e) {
+        handleAuthError(e);
+        // Revert optimistic update on error? Or just let it fail silently but keep local?
+        // For now, let's keep local but maybe show error
+        console.error('Failed to save exercise to Supabase', e);
+      }
+    }
   };
 
-  const editExercise = (exercise: Exercise) => {
+  const editExercise = async (exercise: Exercise) => {
     setExercises(prev => prev.map(e => e.id === exercise.id ? exercise : e));
+
+    if (supabaseSession) {
+      try {
+        await supabaseService.updateExercise(exercise);
+      } catch (e) {
+        handleAuthError(e);
+      }
+    }
   };
 
-  const deleteExercise = (id: string) => {
+  const deleteExercise = async (id: string) => {
     setExercises(prev => prev.filter(e => e.id !== id));
+
+    if (supabaseSession) {
+      try {
+        await supabaseService.deleteExercise(id);
+      } catch (e) {
+        handleAuthError(e);
+      }
+    }
   };
 
   const savePlan = async (plan: WorkoutPlan) => {
