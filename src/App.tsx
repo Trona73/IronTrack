@@ -2468,7 +2468,7 @@ function ExercisesView({
               onChange={e => setNewExerciseMuscle(e.target.value)}
               className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-lg focus:outline-none focus:border-brand-500 transition-colors appearance-none"
             >
-              {muscleGroups.map(m => (
+              {[...muscleGroups].sort((a, b) => a.localeCompare(b)).map(m => (
                 <option key={m} value={m}>{m}</option>
               ))}
             </select>
@@ -2484,7 +2484,7 @@ function ExercisesView({
               onChange={e => setNewExerciseEquipment(e.target.value)}
               className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-lg focus:outline-none focus:border-brand-500 transition-colors appearance-none"
             >
-              {equipmentList.map(e => (
+              {[...equipmentList].sort((a, b) => a.localeCompare(b)).map(e => (
                 <option key={e} value={e}>{e}</option>
               ))}
             </select>
@@ -2511,7 +2511,7 @@ function ExercisesView({
                 className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-sm focus:outline-none focus:border-brand-500 transition-colors appearance-none"
               >
                 <option value="Todos">Todos</option>
-                {muscleGroups.map(m => (
+                {[...muscleGroups].sort((a, b) => a.localeCompare(b)).map(m => (
                   <option key={m} value={m}>{m}</option>
                 ))}
               </select>
@@ -2524,7 +2524,7 @@ function ExercisesView({
                 className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-sm focus:outline-none focus:border-brand-500 transition-colors appearance-none"
               >
                 <option value="Todos">Todos</option>
-                {equipmentList.map(e => (
+                {[...equipmentList].sort((a, b) => a.localeCompare(b)).map(e => (
                   <option key={e} value={e}>{e}</option>
                 ))}
               </select>
