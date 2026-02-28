@@ -11,8 +11,19 @@ export function SupabaseAuth({ onLogin }: { onLogin: () => void }) {
   const [session, setSession] = useState<any>(null);
 
   React.useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error('Error getting session:', error);
+        if (error.message.includes('Refresh Token Not Found') || error.message.includes('Invalid Refresh Token')) {
+          supabase.auth.signOut();
+          setSession(null);
+        }
+        return;
+      }
       setSession(session);
+    }).catch(err => {
+      console.error('Unexpected error getting session:', err);
+      supabase.auth.signOut();
     });
 
     const {

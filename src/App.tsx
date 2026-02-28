@@ -37,7 +37,19 @@ export default function App() {
   // Load from local storage and Supabase
   useEffect(() => {
     // Check Supabase session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error('Error getting session:', error);
+        if (error.message.includes('Refresh Token Not Found') || error.message.includes('Invalid Refresh Token')) {
+          // Clear invalid session
+          supabase.auth.signOut();
+          setSupabaseSession(null);
+          setIsAuthenticated(false);
+          setShowAuth(true);
+        }
+        return;
+      }
+      
       setSupabaseSession(session);
       if (session) {
         setIsAuthenticated(true);
@@ -45,6 +57,10 @@ export default function App() {
         // Fetch data from Supabase
         loadSupabaseData(session.user.id);
       }
+    }).catch(err => {
+      console.error('Unexpected error getting session:', err);
+      // Fallback to sign out if critical auth error
+      supabase.auth.signOut();
     });
 
     const {
@@ -693,6 +709,10 @@ function DashboardView({
   const week1DateInputRef = useRef<HTMLInputElement>(null);
 
   const [week1StartDate, setWeek1StartDate] = useState(() => {
+    const savedDate = localStorage.getItem('iron_week1_start_date');
+    if (savedDate) {
+      return new Date(savedDate);
+    }
     const now = new Date();
     const currentDay = now.getDay(); // 0-6, 0 is Sun
     const daysSinceMonday = currentDay === 0 ? 6 : currentDay - 1;
@@ -722,6 +742,7 @@ function DashboardView({
       const userTimezoneOffset = date.getTimezoneOffset() * 60000;
       const adjustedDate = new Date(date.getTime() + userTimezoneOffset);
       setWeek1StartDate(adjustedDate);
+      localStorage.setItem('iron_week1_start_date', adjustedDate.toISOString());
     }
   };
 
