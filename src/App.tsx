@@ -690,15 +690,18 @@ function DashboardView({
   const daysMap = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
   const fullDaysMap = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
-  const getDayDate = (dayIndex: number) => {
+  const [week1StartDate, setWeek1StartDate] = useState(() => {
     const now = new Date();
     const currentDay = now.getDay(); // 0-6, 0 is Sun
     const daysSinceMonday = currentDay === 0 ? 6 : currentDay - 1;
     const monday = new Date(now);
     monday.setDate(now.getDate() - daysSinceMonday);
     monday.setHours(0, 0, 0, 0);
-  
-    const target = new Date(monday);
+    return monday;
+  });
+
+  const getDayDate = (dayIndex: number) => {
+    const target = new Date(week1StartDate);
     let offset = 0;
     
     if (dayIndex === 0) offset = 6; // Sunday Week 1
@@ -706,9 +709,22 @@ function DashboardView({
     else if (dayIndex >= 1 && dayIndex <= 6) offset = dayIndex - 1; // Mon-Sat Week 1
     else if (dayIndex >= 8 && dayIndex <= 13) offset = dayIndex - 1; // Mon-Sat Week 2
     
-    target.setDate(monday.getDate() + offset);
+    target.setDate(week1StartDate.getDate() + offset);
     return target;
   };
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.valueAsDate) {
+      // Adjust to local timezone to avoid off-by-one errors due to UTC conversion
+      const date = new Date(e.target.valueAsDate);
+      const userTimezoneOffset = date.getTimezoneOffset() * 60000;
+      const adjustedDate = new Date(date.getTime() + userTimezoneOffset);
+      setWeek1StartDate(adjustedDate);
+    }
+  };
+
+  const week2StartDate = new Date(week1StartDate);
+  week2StartDate.setDate(week1StartDate.getDate() + 7);
 
   const getDayStatus = (dayIndex: number, dayPlans: WorkoutPlan[]) => {
     if (dayPlans.length === 0) return { isCompleted: false, isMissed: false };
@@ -820,16 +836,31 @@ function DashboardView({
       </section>
 
       <section>
-        <button 
-          onClick={() => setIsWeek1Expanded(!isWeek1Expanded)}
-          className="w-full flex items-center justify-between mb-4 group"
-        >
-          <h2 className="text-xl font-semibold">Semana 01</h2>
-          <ChevronRight 
-            className={`text-zinc-500 group-hover:text-zinc-300 transition-transform duration-200 ${isWeek1Expanded ? 'rotate-90' : ''}`} 
-            size={20} 
-          />
-        </button>
+        <div className="w-full flex items-center justify-between mb-4 group">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsWeek1Expanded(!isWeek1Expanded)}
+              className="flex items-center gap-2"
+            >
+              <h2 className="text-xl font-semibold">Semana 01</h2>
+              <ChevronRight 
+                className={`text-zinc-500 group-hover:text-zinc-300 transition-transform duration-200 ${isWeek1Expanded ? 'rotate-90' : ''}`} 
+                size={20} 
+              />
+            </button>
+            <div className="relative">
+              <span className="text-brand-500 font-mono text-sm border-b border-brand-500/50 cursor-pointer hover:text-brand-400 transition-colors">
+                {week1StartDate.getDate().toString().padStart(2, '0')}
+              </span>
+              <input
+                type="date"
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                onChange={handleDateChange}
+                value={week1StartDate.toISOString().split('T')[0]}
+              />
+            </div>
+          </div>
+        </div>
         <AnimatePresence>
           {isWeek1Expanded && (
             <motion.div 
@@ -890,16 +921,23 @@ function DashboardView({
       </section>
 
       <section>
-        <button 
-          onClick={() => setIsWeek2Expanded(!isWeek2Expanded)}
-          className="w-full flex items-center justify-between mb-4 group"
-        >
-          <h2 className="text-xl font-semibold">Semana 02</h2>
-          <ChevronRight 
-            className={`text-zinc-500 group-hover:text-zinc-300 transition-transform duration-200 ${isWeek2Expanded ? 'rotate-90' : ''}`} 
-            size={20} 
-          />
-        </button>
+        <div className="w-full flex items-center justify-between mb-4 group">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsWeek2Expanded(!isWeek2Expanded)}
+              className="flex items-center gap-2"
+            >
+              <h2 className="text-xl font-semibold">Semana 02</h2>
+              <ChevronRight 
+                className={`text-zinc-500 group-hover:text-zinc-300 transition-transform duration-200 ${isWeek2Expanded ? 'rotate-90' : ''}`} 
+                size={20} 
+              />
+            </button>
+            <span className="text-zinc-500 font-mono text-sm border-b border-zinc-500/50">
+              {week2StartDate.getDate().toString().padStart(2, '0')}
+            </span>
+          </div>
+        </div>
         <AnimatePresence>
           {isWeek2Expanded && (
             <motion.div 
