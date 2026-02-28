@@ -1573,16 +1573,20 @@ function ListManager({ title, items, onUpdate, onClose }: { title: string, items
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editValue, setEditValue] = useState('');
 
+  // Sort items if title is 'Equipamentos' or 'Grupos Musculares'
+  const shouldSort = title === 'Equipamentos' || title === 'Grupos Musculares';
+  const displayItems = shouldSort ? [...items].sort((a, b) => a.localeCompare(b)) : items;
+
   const handleAdd = () => {
     if (newItem.trim()) {
-      onUpdate([...items, newItem.trim()]);
+      onUpdate([...displayItems, newItem.trim()]);
       setNewItem('');
     }
   };
 
   const handleUpdate = (index: number) => {
     if (editValue.trim()) {
-      const newItems = [...items];
+      const newItems = [...displayItems];
       newItems[index] = editValue.trim();
       onUpdate(newItems);
       setEditingIndex(null);
@@ -1590,7 +1594,7 @@ function ListManager({ title, items, onUpdate, onClose }: { title: string, items
   };
 
   const handleDelete = (index: number) => {
-    const newItems = items.filter((_, i) => i !== index);
+    const newItems = displayItems.filter((_, i) => i !== index);
     onUpdate(newItems);
   };
 
@@ -1618,7 +1622,7 @@ function ListManager({ title, items, onUpdate, onClose }: { title: string, items
         </div>
 
         <div className="space-y-2 overflow-y-auto flex-1">
-          {items.map((item, index) => (
+          {displayItems.map((item, index) => (
             <div key={index} className="flex items-center gap-2 bg-zinc-950 p-3 rounded-xl border border-zinc-800">
               {editingIndex === index ? (
                 <>
