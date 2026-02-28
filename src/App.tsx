@@ -381,133 +381,7 @@ export default function App() {
     setShowAuth(true);
   };
 
-  const generateSimulationData = () => {
-    // 1. Create 3 Plans
-    const planA: WorkoutPlan = {
-      id: 'sim_plan_a',
-      name: 'Simulação A - Peito/Ombro/Tríceps',
-      daysOfWeek: [1],
-      exercises: [
-        { id: 'sim_pe_1', exerciseId: 'e1', sets: [{ reps: 10, weight: 60 }, { reps: 8, weight: 65 }] }, // Supino
-        { id: 'sim_pe_2', exerciseId: 'e4', sets: [{ reps: 12, weight: 14 }, { reps: 10, weight: 16 }] }, // Desenv.
-        { id: 'sim_pe_3', exerciseId: 'e6', sets: [{ reps: 15, weight: 20 }, { reps: 12, weight: 25 }] }, // Triceps
-      ]
-    };
 
-    const planB: WorkoutPlan = {
-      id: 'sim_plan_b',
-      name: 'Simulação B - Costas/Bíceps',
-      daysOfWeek: [2],
-      exercises: [
-        { id: 'sim_pe_4', exerciseId: 'e8', sets: [{ reps: 12, weight: 50 }, { reps: 10, weight: 55 }] }, // Puxada
-        { id: 'sim_pe_5', exerciseId: 'e15', sets: [{ reps: 10, weight: 40 }, { reps: 8, weight: 45 }] }, // Remada
-        { id: 'sim_pe_6', exerciseId: 'e5', sets: [{ reps: 12, weight: 10 }, { reps: 10, weight: 12 }] }, // Rosca
-      ]
-    };
-
-    const planC: WorkoutPlan = {
-      id: 'sim_plan_c',
-      name: 'Simulação C - Pernas',
-      daysOfWeek: [3],
-      exercises: [
-        { id: 'sim_pe_7', exerciseId: 'e2', sets: [{ reps: 10, weight: 80 }, { reps: 8, weight: 90 }] }, // Agachamento
-        { id: 'sim_pe_8', exerciseId: 'e7', sets: [{ reps: 12, weight: 120 }, { reps: 10, weight: 140 }] }, // Leg Press
-        { id: 'sim_pe_9', exerciseId: 'e10', sets: [{ reps: 15, weight: 40 }, { reps: 12, weight: 45 }] }, // Extensora
-      ]
-    };
-
-    // Add plans if they don't exist
-    setPlans(prev => {
-      const newPlans = [...prev];
-      if (!newPlans.find(p => p.id === planA.id)) newPlans.push(planA);
-      if (!newPlans.find(p => p.id === planB.id)) newPlans.push(planB);
-      if (!newPlans.find(p => p.id === planC.id)) newPlans.push(planC);
-      return newPlans;
-    });
-
-    // 2. Create Sessions (History)
-    const now = new Date();
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    
-    // Cycle 1 (Baseline) - 1 Week Ago
-    const sessionA1: WorkoutSession = {
-      id: 'sim_session_a1',
-      planId: planA.id,
-      startTime: new Date(oneWeekAgo.getTime() + 0 * 24 * 60 * 60 * 1000).toISOString(), // Monday
-      endTime: new Date(oneWeekAgo.getTime() + 0 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString(),
-      exercises: [
-        { exerciseId: 'e1', durationSeconds: 600, sets: [{ reps: 10, weight: 60, completedAt: new Date().toISOString(), rpe: 7 }, { reps: 8, weight: 65, completedAt: new Date().toISOString(), rpe: 8 }] },
-        { exerciseId: 'e4', durationSeconds: 600, sets: [{ reps: 12, weight: 14, completedAt: new Date().toISOString(), rpe: 7 }, { reps: 10, weight: 16, completedAt: new Date().toISOString(), rpe: 8 }] },
-        { exerciseId: 'e6', durationSeconds: 600, sets: [{ reps: 15, weight: 20, completedAt: new Date().toISOString(), rpe: 7 }, { reps: 12, weight: 25, completedAt: new Date().toISOString(), rpe: 8 }] },
-      ]
-    };
-
-    const sessionB1: WorkoutSession = {
-      id: 'sim_session_b1',
-      planId: planB.id,
-      startTime: new Date(oneWeekAgo.getTime() + 1 * 24 * 60 * 60 * 1000).toISOString(), // Tuesday
-      endTime: new Date(oneWeekAgo.getTime() + 1 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString(),
-      exercises: [
-        { exerciseId: 'e8', durationSeconds: 600, sets: [{ reps: 12, weight: 50, completedAt: new Date().toISOString(), rpe: 7 }, { reps: 10, weight: 55, completedAt: new Date().toISOString(), rpe: 8 }] },
-        { exerciseId: 'e15', durationSeconds: 600, sets: [{ reps: 10, weight: 40, completedAt: new Date().toISOString(), rpe: 7 }, { reps: 8, weight: 45, completedAt: new Date().toISOString(), rpe: 8 }] },
-        { exerciseId: 'e5', durationSeconds: 600, sets: [{ reps: 12, weight: 10, completedAt: new Date().toISOString(), rpe: 7 }, { reps: 10, weight: 12, completedAt: new Date().toISOString(), rpe: 8 }] },
-      ]
-    };
-
-    const sessionC1: WorkoutSession = {
-      id: 'sim_session_c1',
-      planId: planC.id,
-      startTime: new Date(oneWeekAgo.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(), // Wednesday
-      endTime: new Date(oneWeekAgo.getTime() + 2 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString(),
-      exercises: [
-        { exerciseId: 'e2', durationSeconds: 600, sets: [{ reps: 10, weight: 80, completedAt: new Date().toISOString(), rpe: 7 }, { reps: 8, weight: 90, completedAt: new Date().toISOString(), rpe: 8 }] },
-        { exerciseId: 'e7', durationSeconds: 600, sets: [{ reps: 12, weight: 120, completedAt: new Date().toISOString(), rpe: 7 }, { reps: 10, weight: 140, completedAt: new Date().toISOString(), rpe: 8 }] },
-        { exerciseId: 'e10', durationSeconds: 600, sets: [{ reps: 15, weight: 40, completedAt: new Date().toISOString(), rpe: 7 }, { reps: 12, weight: 45, completedAt: new Date().toISOString(), rpe: 8 }] },
-      ]
-    };
-
-    // Cycle 2 (Current) - This Week
-    // Plan A: Progress (+2kg on Supino)
-    const sessionA2: WorkoutSession = {
-      id: 'sim_session_a2',
-      planId: planA.id,
-      startTime: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
-      endTime: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString(),
-      exercises: [
-        { exerciseId: 'e1', durationSeconds: 600, sets: [{ reps: 10, weight: 62, completedAt: new Date().toISOString(), rpe: 8 }, { reps: 8, weight: 67, completedAt: new Date().toISOString(), rpe: 9 }] }, // +2kg
-        { exerciseId: 'e4', durationSeconds: 600, sets: [{ reps: 12, weight: 14, completedAt: new Date().toISOString(), rpe: 8 }, { reps: 10, weight: 16, completedAt: new Date().toISOString(), rpe: 8 }] }, // Same
-        { exerciseId: 'e6', durationSeconds: 600, sets: [{ reps: 15, weight: 20, completedAt: new Date().toISOString(), rpe: 8 }, { reps: 12, weight: 25, completedAt: new Date().toISOString(), rpe: 8 }] }, // Same
-      ]
-    };
-
-    // Plan B: Same weights, higher RPE
-    const sessionB2: WorkoutSession = {
-      id: 'sim_session_b2',
-      planId: planB.id,
-      startTime: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000).toISOString(), // Yesterday
-      endTime: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString(),
-      exercises: [
-        { exerciseId: 'e8', durationSeconds: 600, sets: [{ reps: 12, weight: 50, completedAt: new Date().toISOString(), rpe: 8 }, { reps: 10, weight: 55, completedAt: new Date().toISOString(), rpe: 9 }] },
-        { exerciseId: 'e15', durationSeconds: 600, sets: [{ reps: 10, weight: 40, completedAt: new Date().toISOString(), rpe: 8 }, { reps: 8, weight: 45, completedAt: new Date().toISOString(), rpe: 9 }] },
-        { exerciseId: 'e5', durationSeconds: 600, sets: [{ reps: 12, weight: 10, completedAt: new Date().toISOString(), rpe: 8 }, { reps: 10, weight: 12, completedAt: new Date().toISOString(), rpe: 9 }] },
-      ]
-    };
-
-    // Plan C: Regress (-5kg on Agachamento)
-    const sessionC2: WorkoutSession = {
-      id: 'sim_session_c2',
-      planId: planC.id,
-      startTime: new Date(now.getTime()).toISOString(), // Today
-      endTime: new Date(now.getTime() + 60 * 60 * 1000).toISOString(),
-      exercises: [
-        { exerciseId: 'e2', durationSeconds: 600, sets: [{ reps: 10, weight: 75, completedAt: new Date().toISOString(), rpe: 9 }, { reps: 8, weight: 85, completedAt: new Date().toISOString(), rpe: 10 }] }, // -5kg
-        { exerciseId: 'e7', durationSeconds: 600, sets: [{ reps: 12, weight: 120, completedAt: new Date().toISOString(), rpe: 8 }, { reps: 10, weight: 140, completedAt: new Date().toISOString(), rpe: 9 }] },
-        { exerciseId: 'e10', durationSeconds: 600, sets: [{ reps: 15, weight: 40, completedAt: new Date().toISOString(), rpe: 8 }, { reps: 12, weight: 45, completedAt: new Date().toISOString(), rpe: 9 }] },
-      ]
-    };
-
-    setSessions([sessionC2, sessionB2, sessionA2, sessionC1, sessionB1, sessionA1]);
-  };
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 font-sans selection:bg-brand-500/30">
@@ -597,7 +471,6 @@ export default function App() {
               plans={plans}
               availableExercises={exercises}
               onClearHistory={clearHistory}
-              onGenerateSimulation={generateSimulationData}
             />
           )}
           {currentView === 'exercises' && (
@@ -2019,7 +1892,7 @@ function ActiveWorkoutView({ plan, availableExercises, onFinish, onCancel }: { p
 }
 
 // --- History View ---
-function HistoryView({ sessions, plans, availableExercises, onClearHistory, onGenerateSimulation }: { sessions: WorkoutSession[], plans: WorkoutPlan[], availableExercises: Exercise[], onClearHistory: () => void, onGenerateSimulation: () => void, key?: React.Key }) {
+function HistoryView({ sessions, plans, availableExercises, onClearHistory }: { sessions: WorkoutSession[], plans: WorkoutPlan[], availableExercises: Exercise[], onClearHistory: () => void, key?: React.Key }) {
   const [showClearConfirmation, setShowClearConfirmation] = useState(false);
   const [expandedExerciseId, setExpandedExerciseId] = useState<string | null>(null);
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState<string | null>(null);
@@ -2197,15 +2070,6 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory, onGe
           <p className="text-zinc-400">Análise técnica por exercício.</p>
         </div>
         <div className="flex gap-2">
-          {sessions.length === 0 && (
-            <button 
-              onClick={onGenerateSimulation}
-              className="text-brand-500 hover:text-brand-400 p-2 rounded-full hover:bg-zinc-800 transition-colors"
-              title="Gerar Simulação"
-            >
-              <Play size={20} />
-            </button>
-          )}
           {sessions.length > 0 && (
             <button 
               onClick={() => setShowClearConfirmation(true)}
