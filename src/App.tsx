@@ -1554,6 +1554,12 @@ function BuilderView({
         </div>
       </div>
 
+      <div className="text-center mb-3 px-4">
+        <p className="text-xs text-brand-500 font-medium">
+          Lembre-se de salvar antes de sair ou mudar de tela, para não perder as alterações realizadas.
+        </p>
+      </div>
+
       <button 
         onClick={handleSave}
         disabled={!name.trim() || exercises.length === 0}
