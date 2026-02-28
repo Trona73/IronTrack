@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User, TrendingUp, RotateCcw, BarChart2, Settings, GripVertical, Check } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'motion/react';
 import { LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
@@ -690,6 +690,8 @@ function DashboardView({
   const daysMap = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
   const fullDaysMap = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
+  const week1DateInputRef = useRef<HTMLInputElement>(null);
+
   const [week1StartDate, setWeek1StartDate] = useState(() => {
     const now = new Date();
     const currentDay = now.getDay(); // 0-6, 0 is Sun
@@ -837,28 +839,40 @@ function DashboardView({
 
       <section>
         <div className="w-full flex items-center justify-between mb-4 group">
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={() => setIsWeek1Expanded(!isWeek1Expanded)}
-              className="flex items-center gap-2"
-            >
-              <h2 className="text-xl font-semibold">Semana 01</h2>
-              <ChevronRight 
-                className={`text-zinc-500 group-hover:text-zinc-300 transition-transform duration-200 ${isWeek1Expanded ? 'rotate-90' : ''}`} 
-                size={20} 
-              />
-            </button>
-            <div className="relative">
-              <span className="text-brand-500 font-mono text-sm border-b border-brand-500/50 cursor-pointer hover:text-brand-400 transition-colors">
+          <button 
+            onClick={() => setIsWeek1Expanded(!isWeek1Expanded)}
+            className="flex items-center gap-2"
+          >
+            <h2 className="text-xl font-semibold">Semana 01</h2>
+            <ChevronRight 
+              className={`text-zinc-500 group-hover:text-zinc-300 transition-transform duration-200 ${isWeek1Expanded ? 'rotate-90' : ''}`} 
+              size={20} 
+            />
+          </button>
+          <div 
+            className="relative group/date cursor-pointer"
+            onClick={() => {
+              try {
+                week1DateInputRef.current?.showPicker();
+              } catch (error) {
+                console.log('showPicker not supported', error);
+                week1DateInputRef.current?.focus();
+              }
+            }}
+          >
+            <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 hover:border-brand-500/50 rounded-lg px-3 py-1.5 transition-colors pointer-events-none">
+              <Calendar size={14} className="text-brand-500" />
+              <span className="text-zinc-300 font-mono text-sm font-medium">
                 {week1StartDate.getDate().toString().padStart(2, '0')}
               </span>
-              <input
-                type="date"
-                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                onChange={handleDateChange}
-                value={week1StartDate.toISOString().split('T')[0]}
-              />
             </div>
+            <input
+              ref={week1DateInputRef}
+              type="date"
+              className="absolute inset-0 opacity-0 w-full h-full pointer-events-none"
+              onChange={handleDateChange}
+              value={week1StartDate.toISOString().split('T')[0]}
+            />
           </div>
         </div>
         <AnimatePresence>
@@ -922,18 +936,19 @@ function DashboardView({
 
       <section>
         <div className="w-full flex items-center justify-between mb-4 group">
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={() => setIsWeek2Expanded(!isWeek2Expanded)}
-              className="flex items-center gap-2"
-            >
-              <h2 className="text-xl font-semibold">Semana 02</h2>
-              <ChevronRight 
-                className={`text-zinc-500 group-hover:text-zinc-300 transition-transform duration-200 ${isWeek2Expanded ? 'rotate-90' : ''}`} 
-                size={20} 
-              />
-            </button>
-            <span className="text-zinc-500 font-mono text-sm border-b border-zinc-500/50">
+          <button 
+            onClick={() => setIsWeek2Expanded(!isWeek2Expanded)}
+            className="flex items-center gap-2"
+          >
+            <h2 className="text-xl font-semibold">Semana 02</h2>
+            <ChevronRight 
+              className={`text-zinc-500 group-hover:text-zinc-300 transition-transform duration-200 ${isWeek2Expanded ? 'rotate-90' : ''}`} 
+              size={20} 
+            />
+          </button>
+          <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 opacity-60">
+            <Calendar size={14} className="text-zinc-500" />
+            <span className="text-zinc-500 font-mono text-sm font-medium">
               {week2StartDate.getDate().toString().padStart(2, '0')}
             </span>
           </div>
