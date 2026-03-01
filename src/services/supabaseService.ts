@@ -68,7 +68,7 @@ export const supabaseService = {
     return count !== null && count > 0;
   },
 
-  async getWorkoutPlans(): Promise<WorkoutPlan[]> {
+  async getWorkoutPlans(userId: string): Promise<WorkoutPlan[]> {
     const { data: plans, error } = await supabase
       .from('workout_plans')
       .select(`
@@ -79,7 +79,8 @@ export const supabaseService = {
           sets,
           "order"
         )
-      `);
+      `)
+      .eq('user_id', userId);
 
     if (error) throw error;
 

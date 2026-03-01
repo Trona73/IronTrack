@@ -186,7 +186,7 @@ export default function App() {
 
   const loadSupabaseData = async (userId: string) => {
     try {
-      const plans = await supabaseService.getWorkoutPlans();
+      const plans = await supabaseService.getWorkoutPlans(userId);
       setPlans(plans);
       const exercises = await supabaseService.getExercises();
       if (exercises.length > 0) {
