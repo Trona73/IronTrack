@@ -3115,6 +3115,11 @@ function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (ema
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Clear fields when switching modes
+  useEffect(() => {
+    setError('');
+  }, [isLoginMode]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -3149,6 +3154,8 @@ function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (ema
         if (success) {
            setIsLoginMode(true);
            setError('Conta criada com sucesso! Faça login para continuar.');
+           // Clear password after signup
+           setPassword('');
         }
       }
     } catch (err: any) {
@@ -3192,7 +3199,7 @@ function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (ema
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
             {!isLoginMode && (
               <div>
                 <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Nome</label>
@@ -3202,6 +3209,8 @@ function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (ema
                   onChange={e => setName(e.target.value)}
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors"
                   placeholder="Seu nome"
+                  autoComplete="off"
+                  name="new-name"
                 />
               </div>
             )}
@@ -3214,6 +3223,8 @@ function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (ema
                 onChange={e => setEmail(e.target.value)}
                 className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors"
                 placeholder="seu@email.com"
+                autoComplete="off"
+                name="new-email"
               />
             </div>
 
@@ -3225,6 +3236,8 @@ function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (ema
                 onChange={e => setPassword(e.target.value)}
                 className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors"
                 placeholder="********"
+                autoComplete="new-password"
+                name="new-password"
               />
             </div>
 
