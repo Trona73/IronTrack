@@ -39,13 +39,15 @@ export default function App() {
     // Check Supabase session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
-        console.error('Error getting session:', error);
         if (error.message.includes('Refresh Token Not Found') || error.message.includes('Invalid Refresh Token')) {
-          // Clear invalid session
+          // Expected error when session expires, handle gracefully
+          console.log('Session expired, signing out.');
           supabase.auth.signOut();
           setSupabaseSession(null);
           setIsAuthenticated(false);
           setShowAuth(true);
+        } else {
+          console.error('Error getting session:', error);
         }
         return;
       }
@@ -58,7 +60,11 @@ export default function App() {
         loadSupabaseData(session.user.id);
       }
     }).catch(err => {
-      console.error('Unexpected error getting session:', err);
+      if (err?.message?.includes('Refresh Token Not Found') || err?.message?.includes('Invalid Refresh Token')) {
+        console.log('Session expired (invalid refresh token), signing out.');
+      } else {
+        console.error('Unexpected error getting session:', err);
+      }
       // Fallback to sign out if critical auth error
       supabase.auth.signOut();
     });
@@ -130,12 +136,14 @@ export default function App() {
   }, []);
 
   const handleAuthError = (error: any) => {
-    console.error('Supabase error:', error);
     if (error?.message?.includes('Refresh Token Not Found') || error?.message?.includes('Invalid Refresh Token')) {
+      console.log('Session expired (invalid refresh token), signing out.');
       supabase.auth.signOut();
       setSupabaseSession(null);
       setIsAuthenticated(false);
       setShowAuth(true);
+    } else {
+      console.error('Supabase error:', error);
     }
   };
 
