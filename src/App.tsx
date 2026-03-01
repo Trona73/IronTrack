@@ -3118,6 +3118,9 @@ function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (ema
   // Clear fields when switching modes
   useEffect(() => {
     setError('');
+    setEmail('');
+    setPassword('');
+    setName('');
   }, [isLoginMode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -3154,8 +3157,7 @@ function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (ema
         if (success) {
            setIsLoginMode(true);
            setError('Conta criada com sucesso! Faça login para continuar.');
-           // Clear password after signup
-           setPassword('');
+           // Password cleared by useEffect dependency on isLoginMode
         }
       }
     } catch (err: any) {
@@ -3186,13 +3188,13 @@ function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (ema
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-6">
           <div className="flex border-b border-zinc-800 pb-4">
             <button 
-              onClick={() => { setIsLoginMode(true); setError(''); }}
+              onClick={() => setIsLoginMode(true)}
               className={`flex-1 pb-2 text-sm font-medium transition-colors ${isLoginMode ? 'text-brand-500 border-b-2 border-brand-500' : 'text-zinc-500'}`}
             >
               Entrar
             </button>
             <button 
-              onClick={() => { setIsLoginMode(false); setError(''); }}
+              onClick={() => setIsLoginMode(false)}
               className={`flex-1 pb-2 text-sm font-medium transition-colors ${!isLoginMode ? 'text-brand-500 border-b-2 border-brand-500' : 'text-zinc-500'}`}
             >
               Criar Conta
@@ -3210,7 +3212,7 @@ function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (ema
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors"
                   placeholder="Seu nome"
                   autoComplete="off"
-                  name="new-name"
+                  name="signup_name"
                 />
               </div>
             )}
@@ -3224,7 +3226,7 @@ function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (ema
                 className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors"
                 placeholder="seu@email.com"
                 autoComplete="off"
-                name="new-email"
+                name={isLoginMode ? "login_email" : "signup_email"}
               />
             </div>
 
@@ -3237,7 +3239,7 @@ function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (ema
                 className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors"
                 placeholder="********"
                 autoComplete="new-password"
-                name="new-password"
+                name={isLoginMode ? "login_password" : "signup_password"}
               />
             </div>
 
