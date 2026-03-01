@@ -8,7 +8,16 @@ export const supabaseService = {
       .select('*');
     
     if (error) throw error;
-    return data || [];
+    
+    return (data || []).map((e: any) => ({
+      id: e.id,
+      name: e.name,
+      equipment: e.equipment,
+      muscleGroup: e.muscle_group,
+      description: e.description,
+      imageUrl: e.image_url,
+      videoUrl: e.video_url
+    }));
   },
 
   async ensureExercise(exercise: Exercise): Promise<string> {
