@@ -322,6 +322,7 @@ export default function App() {
         
         if (isUuid) {
            await supabaseService.updateWorkoutPlan(planToSave);
+           setPlans(prev => prev.map(p => p.id === plan.id ? planToSave : p));
         } else {
            // If not a UUID (e.g. 'p1', 'p2'), create as new in Supabase
            // and update local state with the real ID

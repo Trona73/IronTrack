@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { createClient } from '@supabase/supabase-js';
 
 // Note: The user requested NEXT_PUBBLIC_SUPASBASE_URL, but in Vite we use VITE_ prefix.
