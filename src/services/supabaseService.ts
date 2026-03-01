@@ -55,13 +55,17 @@ export const supabaseService = {
     if (error) throw error;
   },
 
-  async deleteExercise(id: string): Promise<void> {
-    const { error } = await supabase
+  async deleteExercise(id: string): Promise<boolean> {
+    const { error, count } = await supabase
       .from('exercises')
-      .delete()
+      .delete({ count: 'exact' })
       .eq('id', id);
 
     if (error) throw error;
+    
+    // If count is 0, it means the exercise wasn't found or couldn't be deleted (e.g. RLS)
+    // We'll return false to indicate it wasn't deleted from the DB
+    return count !== null && count > 0;
   },
 
   async getWorkoutPlans(): Promise<WorkoutPlan[]> {

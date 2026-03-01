@@ -36,6 +36,18 @@ export default function App() {
 
   // Load from local storage and Supabase
   useEffect(() => {
+    // Suppress specific Supabase errors that are noisy but handled
+    const originalConsoleError = console.error;
+    console.error = (...args: any[]) => {
+      if (
+        (typeof args[0] === 'string' && (args[0].includes('Refresh Token Not Found') || args[0].includes('Invalid Refresh Token'))) ||
+        (args[0] && typeof args[0] === 'object' && args[0].message && (args[0].message.includes('Refresh Token Not Found') || args[0].message.includes('Invalid Refresh Token')))
+      ) {
+        return;
+      }
+      originalConsoleError(...args);
+    };
+
     // Check Supabase session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
@@ -56,6 +68,16 @@ export default function App() {
       if (session) {
         setIsAuthenticated(true);
         setShowAuth(false);
+        
+        // Update profile from metadata if available
+        if (session.user.user_metadata?.full_name || session.user.email) {
+           setUserProfile(prev => ({ 
+             ...prev, 
+             name: session.user.user_metadata?.full_name || prev.name, 
+             email: session.user.email || prev.email 
+           }));
+        }
+
         // Fetch data from Supabase
         loadSupabaseData(session.user.id);
       }
@@ -76,10 +98,22 @@ export default function App() {
       if (session) {
         setIsAuthenticated(true);
         setShowAuth(false);
+        
+        // Update profile from metadata if available
+        if (session.user.user_metadata?.full_name || session.user.email) {
+           setUserProfile(prev => ({ 
+             ...prev, 
+             name: session.user.user_metadata?.full_name || prev.name, 
+             email: session.user.email || prev.email 
+           }));
+        }
+
         loadSupabaseData(session.user.id);
       } else {
         // If logged out, maybe clear data or fall back to local?
-        // For now, let's keep local data logic below
+        // We handle logout explicitly in handleLogout, but if session expires or user logs out elsewhere:
+        // Ideally we should clear state here too if session becomes null.
+        // But handleLogout calls signOut which triggers this.
       }
     });
 
@@ -132,7 +166,10 @@ export default function App() {
     if (savedMuscleGroups) setMuscleGroups(JSON.parse(savedMuscleGroups));
     if (savedEquipment) setEquipmentList(JSON.parse(savedEquipment));
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      console.error = originalConsoleError;
+    };
   }, []);
 
   const handleAuthError = (error: any) => {
@@ -210,13 +247,35 @@ export default function App() {
   };
 
   const deleteExercise = async (id: string) => {
+    // Optimistic update
+    const exerciseToDelete = exercises.find(e => e.id === id);
+    if (!exerciseToDelete) return; // Should not happen
+
     setExercises(prev => prev.filter(e => e.id !== id));
 
     if (supabaseSession) {
+      // If it's a temporary ID, we don't need to delete from Supabase
+      if (id.startsWith('custom_')) return;
+
       try {
-        await supabaseService.deleteExercise(id);
-      } catch (e) {
-        handleAuthError(e);
+        const deleted = await supabaseService.deleteExercise(id);
+        
+        if (!deleted) {
+          // If not deleted from DB (e.g. system exercise or RLS), revert
+          console.warn('Exercise not deleted from DB (likely system default or permission denied)');
+          setExercises(prev => [...prev, exerciseToDelete]);
+          alert('Não é possível excluir este exercício (pode ser um exercício padrão do sistema).');
+        }
+      } catch (e: any) {
+        console.error('Failed to delete exercise:', e);
+        // Revert optimistic update
+        setExercises(prev => [...prev, exerciseToDelete]);
+        
+        if (e?.code === '23503') {
+          alert('Não é possível excluir este exercício pois ele está sendo usado em um ou mais treinos.');
+        } else {
+          alert('Erro ao excluir exercício. Tente novamente.');
+        }
       }
     }
   };
@@ -417,6 +476,21 @@ export default function App() {
     setSupabaseSession(null);
     setIsAuthenticated(false);
     setShowAuth(true);
+    
+    // Clear local state
+    setPlans([]);
+    setSessions([]);
+    setExercises(EXERCISES); // Reset to defaults
+    setUserProfile({ name: '', email: '', password: '' });
+    
+    // Clear local storage
+    localStorage.removeItem('iron_plans');
+    localStorage.removeItem('iron_sessions');
+    localStorage.removeItem('iron_profile');
+    localStorage.removeItem('iron_exercises');
+    localStorage.removeItem('iron_exercises_v2');
+    localStorage.removeItem('iron_muscle_groups');
+    localStorage.removeItem('iron_equipment');
   };
 
 
