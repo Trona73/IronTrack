@@ -193,13 +193,22 @@ export default function App() {
       if (exercises.length > 0) {
         setExercises(exercises);
       }
+      const settings = await supabaseService.getUserSettings(userId);
+      if (settings) {
+        if (settings.muscleGroups.length > 0) setMuscleGroups(settings.muscleGroups);
+        if (settings.equipment.length > 0) setEquipmentList(settings.equipment);
+        setUserProfile(prev => ({
+          ...prev,
+          trainingStartDay: settings.trainingStartDay,
+          weeklyTrainingGoal: settings.weeklyTrainingGoal
+        }));
+      }
       setIsSupabaseLoaded(true);
     } catch (error) {
       handleAuthError(error);
       setIsSupabaseLoaded(true);
     }
   };
-
 
   // Save to local storage
 useEffect(() => {
@@ -217,6 +226,15 @@ useEffect(() => {
       console.error('Failed to save to localStorage:', error);
       // If quota exceeded, we might want to alert the user or handle it gracefully
       // For now, just logging to prevent crash
+    }
+    // Save settings to Supabase
+    if (supabaseSession) {
+      supabaseService.saveUserSettings(supabaseSession.user.id, {
+        muscleGroups,
+        equipment: equipmentList,
+        trainingStartDay: userProfile.trainingStartDay,
+        weeklyTrainingGoal: userProfile.weeklyTrainingGoal
+      }).catch(handleAuthError);
     }
   }, [plans, sessions, userProfile, exercises, muscleGroups, equipmentList, isSupabaseLoaded]);
       

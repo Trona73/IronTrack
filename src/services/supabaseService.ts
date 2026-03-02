@@ -21,7 +21,6 @@ export const supabaseService = {
   },
 
   async ensureExercise(exercise: Exercise): Promise<string> {
-    // 1. Try to find by name
     const { data: existing } = await supabase
       .from('exercises')
       .select('id')
@@ -30,7 +29,6 @@ export const supabaseService = {
 
     if (existing) return existing.id;
 
-    // 2. If not found, create
     const { data: newExercise, error } = await supabase
       .from('exercises')
       .insert({
@@ -71,10 +69,40 @@ export const supabaseService = {
       .eq('id', id);
 
     if (error) throw error;
-    
-    // If count is 0, it means the exercise wasn't found or couldn't be deleted (e.g. RLS)
-    // We'll return false to indicate it wasn't deleted from the DB
     return count !== null && count > 0;
+  },
+
+  async getUserSettings(userId: string): Promise<{ muscleGroups: string[], equipment: string[], trainingStartDay: number, weeklyTrainingGoal: number } | null> {
+    const { data, error } = await supabase
+      .from('user_settings')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+
+    if (error) return null;
+    if (!data) return null;
+
+    return {
+      muscleGroups: data.muscle_groups || [],
+      equipment: data.equipment || [],
+      trainingStartDay: data.training_start_day ?? 1,
+      weeklyTrainingGoal: data.weekly_training_goal ?? 3
+    };
+  },
+
+  async saveUserSettings(userId: string, settings: { muscleGroups: string[], equipment: string[], trainingStartDay?: number, weeklyTrainingGoal?: number }): Promise<void> {
+    const { error } = await supabase
+      .from('user_settings')
+      .upsert({
+        user_id: userId,
+        muscle_groups: settings.muscleGroups,
+        equipment: settings.equipment,
+        training_start_day: settings.trainingStartDay ?? 1,
+        weekly_training_goal: settings.weeklyTrainingGoal ?? 3,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id' });
+
+    if (error) throw error;
   },
 
   async getWorkoutPlans(userId: string): Promise<WorkoutPlan[]> {
@@ -93,7 +121,6 @@ export const supabaseService = {
 
     if (error) throw error;
 
-    // Transform to match app types
     return plans.map((plan: any) => ({
       id: plan.id,
       name: plan.name,
@@ -109,7 +136,6 @@ export const supabaseService = {
   },
 
   async createWorkoutPlan(plan: WorkoutPlan, userId: string): Promise<WorkoutPlan> {
-    // 1. Create Plan
     const { data: planData, error: planError } = await supabase
       .from('workout_plans')
       .insert({
@@ -122,7 +148,6 @@ export const supabaseService = {
 
     if (planError) throw planError;
 
-    // 2. Create Planned Exercises
     if (plan.exercises.length > 0) {
       const plannedExercises = plan.exercises.map((ex, index) => ({
         plan_id: planData.id,
@@ -142,7 +167,6 @@ export const supabaseService = {
   },
 
   async updateWorkoutPlan(plan: WorkoutPlan): Promise<void> {
-    // 1. Update Plan details
     const { error: planError } = await supabase
       .from('workout_plans')
       .update({
@@ -153,8 +177,6 @@ export const supabaseService = {
 
     if (planError) throw planError;
 
-    // 2. Delete existing exercises (simple strategy: delete all and recreate)
-    // In a real app, you might want to diff and update/insert/delete
     const { error: deleteError } = await supabase
       .from('planned_exercises')
       .delete()
@@ -162,7 +184,6 @@ export const supabaseService = {
 
     if (deleteError) throw deleteError;
 
-    // 3. Insert new exercises
     if (plan.exercises.length > 0) {
       const plannedExercises = plan.exercises.map((ex, index) => ({
         plan_id: plan.id,
@@ -180,7 +201,6 @@ export const supabaseService = {
   },
 
   async deleteWorkoutPlan(planId: string): Promise<void> {
-    // 1. Delete related workout sessions first to avoid foreign key constraint error
     const { error: sessionError } = await supabase
       .from('workout_sessions')
       .delete()
@@ -188,7 +208,6 @@ export const supabaseService = {
 
     if (sessionError) throw sessionError;
 
-    // 2. Delete related planned exercises
     const { error: exerciseError } = await supabase
       .from('planned_exercises')
       .delete()
@@ -196,7 +215,6 @@ export const supabaseService = {
 
     if (exerciseError) throw exerciseError;
 
-    // 3. Delete the plan itself
     const { error } = await supabase
       .from('workout_plans')
       .delete()
