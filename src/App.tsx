@@ -219,20 +219,7 @@ useEffect(() => {
       // For now, just logging to prevent crash
     }
   }, [plans, sessions, userProfile, exercises, muscleGroups, equipmentList, isSupabaseLoaded]);
-      localStorage.setItem('iron_sessions', JSON.stringify(sessions));
-      localStorage.setItem('iron_profile', JSON.stringify(userProfile));
-      localStorage.setItem('iron_muscle_groups', JSON.stringify(muscleGroups));
-      localStorage.setItem('iron_equipment', JSON.stringify(equipmentList));
       
-      // Save all exercises to v2
-      localStorage.setItem('iron_exercises_v2', JSON.stringify(exercises));
-    } catch (error) {
-      console.error('Failed to save to localStorage:', error);
-      // If quota exceeded, we might want to alert the user or handle it gracefully
-      // For now, just logging to prevent crash
-    }
-  }, [plans, sessions, userProfile, exercises, muscleGroups, equipmentList]);
-
   const addExercise = async (exercise: Exercise) => {
     // Optimistic update with temp ID
     setExercises(prev => [...prev, exercise]);
