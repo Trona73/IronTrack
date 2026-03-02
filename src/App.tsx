@@ -199,6 +199,13 @@ export default function App() {
         if (settings.equipment.length > 0) setEquipmentList(settings.equipment);
         setUserProfile(prev => ({
           ...prev,
+          name: settings.name || prev.name,
+          weight: settings.weight || prev.weight,
+          height: settings.height || prev.height,
+          age: settings.age || prev.age,
+          gender: (settings.gender as any) || prev.gender,
+          activityLevel: (settings.activityLevel as any) || prev.activityLevel,
+          goal: (settings.goal as any) || prev.goal,
           trainingStartDay: settings.trainingStartDay,
           weeklyTrainingGoal: settings.weeklyTrainingGoal
         }));
@@ -233,12 +240,15 @@ useEffect(() => {
         muscleGroups,
         equipment: equipmentList,
         trainingStartDay: userProfile.trainingStartDay,
-        weeklyTrainingGoal: userProfile.weeklyTrainingGoal
-      }).then(() => {
-        console.log('Settings saved to Supabase');
-      }).catch((e) => {
-        console.error('Failed to save settings:', e);
-      });
+        weeklyTrainingGoal: userProfile.weeklyTrainingGoal,
+        name: userProfile.name,
+        weight: userProfile.weight,
+        height: userProfile.height,
+        age: userProfile.age,
+        gender: userProfile.gender,
+        activityLevel: userProfile.activityLevel,
+        goal: userProfile.goal
+      }).catch(handleAuthError);
     }
   }, [plans, sessions, userProfile, exercises, muscleGroups, equipmentList, isSupabaseLoaded]);
       

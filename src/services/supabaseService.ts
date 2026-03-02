@@ -72,7 +72,7 @@ export const supabaseService = {
     return count !== null && count > 0;
   },
 
-  async getUserSettings(userId: string): Promise<{ muscleGroups: string[], equipment: string[], trainingStartDay: number, weeklyTrainingGoal: number } | null> {
+  async getUserSettings(userId: string): Promise<{ muscleGroups: string[], equipment: string[], trainingStartDay: number, weeklyTrainingGoal: number, name?: string, weight?: number, height?: number, age?: number, gender?: string, activityLevel?: string, goal?: string } | null> {
     const { data, error } = await supabase
       .from('user_settings')
       .select('*')
@@ -86,11 +86,18 @@ export const supabaseService = {
       muscleGroups: data.muscle_groups || [],
       equipment: data.equipment || [],
       trainingStartDay: data.training_start_day ?? 1,
-      weeklyTrainingGoal: data.weekly_training_goal ?? 3
+      weeklyTrainingGoal: data.weekly_training_goal ?? 3,
+      name: data.name,
+      weight: data.weight,
+      height: data.height,
+      age: data.age,
+      gender: data.gender,
+      activityLevel: data.activity_level,
+      goal: data.goal
     };
   },
 
-  async saveUserSettings(userId: string, settings: { muscleGroups: string[], equipment: string[], trainingStartDay?: number, weeklyTrainingGoal?: number }): Promise<void> {
+  async saveUserSettings(userId: string, settings: { muscleGroups: string[], equipment: string[], trainingStartDay?: number, weeklyTrainingGoal?: number, name?: string, weight?: number, height?: number, age?: number, gender?: string, activityLevel?: string, goal?: string }): Promise<void> {
     const { error } = await supabase
       .from('user_settings')
       .upsert({
@@ -99,6 +106,13 @@ export const supabaseService = {
         equipment: settings.equipment,
         training_start_day: settings.trainingStartDay ?? 1,
         weekly_training_goal: settings.weeklyTrainingGoal ?? 3,
+        name: settings.name,
+        weight: settings.weight,
+        height: settings.height,
+        age: settings.age,
+        gender: settings.gender,
+        activity_level: settings.activityLevel,
+        goal: settings.goal,
         updated_at: new Date().toISOString()
       }, { onConflict: 'user_id' });
 
