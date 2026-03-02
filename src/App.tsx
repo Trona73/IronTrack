@@ -234,7 +234,11 @@ useEffect(() => {
         equipment: equipmentList,
         trainingStartDay: userProfile.trainingStartDay,
         weeklyTrainingGoal: userProfile.weeklyTrainingGoal
-      }).catch(handleAuthError);
+      }).then(() => {
+        console.log('Settings saved to Supabase');
+      }).catch((e) => {
+        console.error('Failed to save settings:', e);
+      });
     }
   }, [plans, sessions, userProfile, exercises, muscleGroups, equipmentList, isSupabaseLoaded]);
       
