@@ -765,7 +765,19 @@ function DashboardView({
   key?: React.Key 
 }) {
   const today = new Date().getDay();
-  const todaysPlans = plans.filter(p => p.daysOfWeek.includes(today) || p.daysOfWeek.includes(today + 7));
+  const now = new Date();
+  const weekStart = week1StartDate;
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 13);
+  
+  const isWeek1 = now >= weekStart && now < new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const dayOfWeek = today; // 0-6
+  const week2Day = today + 7; // 7-13
+
+  const todaysPlans = plans.filter(p => {
+    if (isWeek1) return p.daysOfWeek.includes(dayOfWeek);
+    else return p.daysOfWeek.includes(week2Day);
+  });
   const [time, setTime] = useState(new Date());
   const [showPlanSelector, setShowPlanSelector] = useState(false);
   const [isWeek1Expanded, setIsWeek1Expanded] = useState(true);
@@ -1436,7 +1448,6 @@ function BuilderView({
   key?: React.Key 
 }) {
   const [name, setName] = useState(initialPlan?.name || '');
-  const [days, setDays] = useState<number[]>(initialPlan?.daysOfWeek || []);
   const [exercises, setExercises] = useState<PlannedExercise[]>(initialPlan?.exercises || []);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   
@@ -1448,11 +1459,8 @@ function BuilderView({
   const availableMuscleGroups = Array.from(new Set(availableExercises.map(e => e.muscleGroup))).sort();
   const availableEquipment = Array.from(new Set(availableExercises.map(e => e.equipment))).sort();
 
-  const daysMap = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 
-  const toggleDay = (d: number) => {
-    setDays(prev => prev.includes(d) ? prev.filter(day => day !== d) : [...prev, d].sort());
-  };
+  
 
   const addExerciseToPlan = (exerciseId: string) => {
     setExercises(prev => [
@@ -1499,7 +1507,7 @@ function BuilderView({
     onSave({
       id: initialPlan?.id || Math.random().toString(36).substring(7),
       name,
-      daysOfWeek: days,
+      daysOfWeek: [],
       exercises
     });
   };
@@ -1601,23 +1609,7 @@ function BuilderView({
           />
         </div>
 
-        <div>
-          <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Dias da Semana</label>
-          <div className="flex justify-between gap-2">
-            {daysMap.map((d, i) => (
-              <button
-                key={i}
-                onClick={() => toggleDay(i)}
-                className={`w-10 h-10 rounded-full font-medium flex items-center justify-center transition-colors ${
-                  days.includes(i) ? 'bg-brand-500 text-zinc-950' : 'bg-zinc-900 text-zinc-400 border border-zinc-800'
-                }`}
-              >
-                {d}
-              </button>
-            ))}
-          </div>
-        </div>
-
+    
         <div>
           <div className="flex items-center justify-between mb-4">
             <label className="block text-xs font-mono text-zinc-500 uppercase tracking-wider">Exercícios</label>
