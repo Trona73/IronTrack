@@ -765,19 +765,7 @@ function DashboardView({
   key?: React.Key 
 }) {
   const today = new Date().getDay();
-  const now = new Date();
-  const weekStart = week1StartDate;
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 13);
   
-  const isWeek1 = now >= weekStart && now < new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
-  const dayOfWeek = today; // 0-6
-  const week2Day = today + 7; // 7-13
-
-  const todaysPlans = plans.filter(p => {
-    if (isWeek1) return p.daysOfWeek.includes(dayOfWeek);
-    else return p.daysOfWeek.includes(week2Day);
-  });
   const [time, setTime] = useState(new Date());
   const [showPlanSelector, setShowPlanSelector] = useState(false);
   const [isWeek1Expanded, setIsWeek1Expanded] = useState(true);
@@ -826,10 +814,21 @@ function DashboardView({
       localStorage.setItem('iron_week1_start_date', adjustedDate.toISOString());
     }
   };
-
   const week2StartDate = new Date(week1StartDate);
   week2StartDate.setDate(week1StartDate.getDate() + 7);
 
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const weekStart = new Date(week1StartDate);
+  weekStart.setHours(0, 0, 0, 0);
+  const isWeek1 = now >= weekStart && now < new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const dayOfWeek = today;
+  const week2Day = today + 7;
+
+  const todaysPlans = plans.filter(p => {
+    if (isWeek1) return p.daysOfWeek.includes(dayOfWeek);
+    else return p.daysOfWeek.includes(week2Day);
+  });
   const getDayStatus = (dayIndex: number, dayPlans: WorkoutPlan[]) => {
     if (dayPlans.length === 0) return { isCompleted: false, isMissed: false };
     
