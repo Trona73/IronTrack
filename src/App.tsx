@@ -317,13 +317,20 @@ useEffect(() => {
   };
 
   const savePlan = async (plan: WorkoutPlan) => {
+    // Preserve existing daysOfWeek if plan already exists
+    const existingPlan = plans.find(p => p.id === plan.id);
+    const planWithDays = {
+      ...plan,
+      daysOfWeek: plan.daysOfWeek.length > 0 ? plan.daysOfWeek : (existingPlan?.daysOfWeek || [])
+    };
+
     // Optimistic update
     setPlans(prev => {
       const exists = prev.find(p => p.id === plan.id);
       if (exists) {
-        return prev.map(p => p.id === plan.id ? plan : p);
+        return prev.map(p => p.id === plan.id ? planWithDays : p);
       }
-      return [...prev, plan];
+      return [...prev, planWithDays];
     });
     setPlanToEdit(null);
     setCurrentView('dashboard');
