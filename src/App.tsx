@@ -1340,26 +1340,10 @@ function PlanCard({ plan, availableExercises, onStart, onEdit, onDelete, isCompl
       <div className={`flex justify-between items-start ${compact ? 'mb-2' : 'mb-4'}`}>
         <div className={compact ? "flex-1 min-w-0 mr-2" : ""}>
           <h3 className={`font-bold ${compact ? 'text-base' : 'text-lg'} ${isCompleted ? 'line-through decoration-zinc-500' : ''}`}>{plan.name}</h3>
-          {!compact && (
-            <div className="flex gap-2 mt-1">
-              {plan.daysOfWeek.map(d => (
-                <span key={d} className="text-[10px] font-mono bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded-md">
-                  {daysMap[d]}
-                </span>
-              ))}
-            </div>
-          )}
+          
         </div>
         <div className="flex items-center gap-2">
-          {compact && (
-            <div className="flex gap-1 mr-1">
-              {plan.daysOfWeek.map(d => (
-                <span key={d} className="text-[10px] font-mono bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded-md">
-                  {daysMap[d]}
-                </span>
-              ))}
-            </div>
-          )}
+          
           <div className="flex gap-1">
             <button 
               onClick={(e) => { e.stopPropagation(); onEdit(); }}
