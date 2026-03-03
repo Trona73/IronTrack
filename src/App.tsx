@@ -358,7 +358,7 @@ useEffect(() => {
           return { ...pe, exerciseId: realId };
         }));
 
-        const planToSave = { ...plan, exercises: updatedExercises };
+        const planToSave = { ...planWithDays, exercises: updatedExercises };
 
         // Check if ID is a valid UUID (simple regex check)
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(planToSave.id);
