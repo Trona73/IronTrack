@@ -2944,7 +2944,7 @@ function ProfileView({ profile, onSave, onLogout }: { profile: UserProfile, onSa
             </div>
           </div>
         ) : (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-6">
             <div className="flex items-center gap-4 mb-5">
               <div className="w-14 h-14 rounded-full bg-zinc-800 border-2 border-brand-500 flex items-center justify-center text-brand-500 font-bold text-2xl flex-shrink-0">
                 {profile.name ? profile.name.charAt(0).toUpperCase() : '?'}
