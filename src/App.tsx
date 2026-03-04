@@ -3110,7 +3110,6 @@ function ProfileView({ profile, onSave, onLogout }: { profile: UserProfile, onSa
           Sair da Conta
         </button>
       </div>
-    </div>
     </motion.div>
   );
 }
