@@ -16,7 +16,8 @@ export const supabaseService = {
       muscleGroup: e.muscle_group,
       description: e.description,
       imageUrl: e.image_url,
-      videoUrl: e.video_url
+      videoUrl: e.video_url,
+      type: e.type || 'weighted'
     }));
   },
 
