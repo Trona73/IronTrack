@@ -7,14 +7,17 @@ export interface Exercise {
   name: string;
   equipment: Equipment;
   muscleGroup: MuscleGroup;
+  type?: 'weighted' | 'reps_only' | 'timed' | 'cardio';
   imageUrl?: string;
   description?: string;
   videoUrl?: string;
 }
 
 export interface PlannedSet {
-  reps: number;
-  weight: number;
+  reps?: number;
+  weight?: number;
+  duration?: number; // segundos, para exercícios de tempo
+  distance?: number; // km, para cardio
 }
 
 export interface PlannedExercise {
@@ -31,9 +34,11 @@ export interface WorkoutPlan {
 }
 
 export interface CompletedSet {
-  reps: number;
-  weight: number;
-  completedAt: string; // ISO string
+  reps?: number;
+  weight?: number;
+  duration?: number; // segundos, para exercícios de tempo
+  distance?: number; // km, para cardio
+  completedAt: string;
   rpe?: number;
 }
 

@@ -2620,6 +2620,7 @@ function ExercisesView({
   const [newExerciseName, setNewExerciseName] = useState('');
   const [newExerciseMuscle, setNewExerciseMuscle] = useState<string>(muscleGroups[0] || '');
   const [newExerciseEquipment, setNewExerciseEquipment] = useState<string>(equipmentList[0] || '');
+  const [newExerciseType, setNewExerciseType] = useState<'weighted' | 'reps_only' | 'timed' | 'cardio'>('weighted');
 
   const handleCreateExercise = () => {
     if (!newExerciseName.trim()) return;
@@ -2629,7 +2630,8 @@ function ExercisesView({
         ...editingExercise,
         name: newExerciseName,
         muscleGroup: newExerciseMuscle,
-        equipment: newExerciseEquipment
+        equipment: newExerciseEquipment,
+        type: newExerciseType
       });
       setEditingExercise(null);
     } else {
@@ -2637,7 +2639,8 @@ function ExercisesView({
         id: `custom_${Date.now()}`,
         name: newExerciseName,
         muscleGroup: newExerciseMuscle,
-        equipment: newExerciseEquipment
+        equipment: newExerciseEquipment,
+        type: newExerciseType
       };
       onAddExercise(newExercise);
     }
@@ -2719,6 +2722,19 @@ function ExercisesView({
           </div>
 
           <div>
+          <div>
+              <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Tipo de Exercício</label>
+              <select
+                value={newExerciseType}
+                onChange={e => setNewExerciseType(e.target.value as any)}
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-lg focus:outline-none focus:border-brand-500 transition-colors appearance-none"
+              >
+                <option value="weighted">Carga + Reps</option>
+                <option value="reps_only">Só Reps</option>
+                <option value="timed">Tempo (estático)</option>
+                <option value="cardio">Cardio</option>
+              </select>
+            </div>
             <div className="flex justify-between items-center mb-2">
               <label className="block text-xs font-mono text-zinc-500 uppercase tracking-wider">Equipamento</label>
               <button onClick={() => setManagingList('equipment')} className="text-xs text-brand-500 font-medium hover:text-brand-400">Gerenciar</button>
