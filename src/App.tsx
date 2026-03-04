@@ -1913,9 +1913,36 @@ function ActiveWorkoutView({ plan, availableExercises, weightIncrement, onFinish
 
   // Timer state
   const [elapsed, setElapsed] = useState(0);
-  const [isResting, setIsResting] = useState(false);
+  const [iconst [currentDuration, setCurrentDuration] = useState(() => {
+    try {
+      const s = localStorage.getItem('iron_active_workout_state');
+      const saved = s ? JSON.parse(s) : null;
+      return saved?.planId === plan.id ? (saved.currentDuration || currentPlannedEx?.sets[0]?.duration || 30) : (currentPlannedEx?.sets[0]?.duration || 30);
+    } catch { return 30; }
+  });
+  const [currentDistance, setCurrentDistance] = useState(() => {
+    try {
+      const s = localStorage.getItem('iron_active_workout_state');
+      const saved = s ? JSON.parse(s) : null;
+      return saved?.planId === plan.id ? (saved.currentDistance || currentPlannedEx?.sets[0]?.distance || 0) : (currentPlannedEx?.sets[0]?.distance || 0);
+    } catch { return 0; }
+  });sResting, setIsResting] = useState(false);
   const [restTime, setRestTime] = useState(0);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [currentDuration, setCurrentDuration] = useState(() => {
+    try {
+      const s = localStorage.getItem('iron_active_workout_state');
+      const saved = s ? JSON.parse(s) : null;
+      return saved?.planId === plan.id ? (saved.currentDuration || currentPlannedEx?.sets[0]?.duration || 30) : (currentPlannedEx?.sets[0]?.duration || 30);
+    } catch { return 30; }
+  });
+  const [currentDistance, setCurrentDistance] = useState(() => {
+    try {
+      const s = localStorage.getItem('iron_active_workout_state');
+      const saved = s ? JSON.parse(s) : null;
+      return saved?.planId === plan.id ? (saved.currentDistance || currentPlannedEx?.sets[0]?.distance || 0) : (currentPlannedEx?.sets[0]?.distance || 0);
+    } catch { return 0; }
+  });
   useEffect(() => {
     const state = {
       planId: plan.id,
@@ -1947,9 +1974,12 @@ function ActiveWorkoutView({ plan, availableExercises, weightIncrement, onFinish
   };
 
   const completeSet = () => {
+    const exType = exerciseDef?.type || 'weighted';
     const newSet: CompletedSet = {
-      reps: currentReps,
-      weight: currentWeight,
+      reps: exType === 'weighted' || exType === 'reps_only' ? currentReps : undefined,
+      weight: exType === 'weighted' ? currentWeight : undefined,
+      duration: exType === 'timed' || exType === 'cardio' ? currentDuration : undefined,
+      distance: exType === 'cardio' ? currentDistance : undefined,
       completedAt: new Date().toISOString()
     };
     const newSets = [...currentSets, newSet];
@@ -2109,36 +2139,74 @@ function ActiveWorkoutView({ plan, availableExercises, weightIncrement, onFinish
         {/* Controls */}
         {!isResting && !isLastSet && (
           <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 mb-[env(safe-area-inset-bottom)]">
-            <div className="flex gap-4 mb-6">
-              <div className="flex-1">
-                <label className="block text-center text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Reps</label>
-                <div className="flex items-center justify-between bg-zinc-950 rounded-2xl p-2 border border-zinc-800">
-                  <button onClick={() => setCurrentReps(Math.max(1, currentReps - 1))} className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-xl text-xl active:scale-95">-</button>
-                  <input
-                    type="number"
-                    value={currentReps}
-                    onChange={e => setCurrentReps(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-16 text-3xl font-bold font-mono text-center bg-transparent focus:outline-none"
-                  />
-                  <button onClick={() => setCurrentReps(currentReps + 1)} className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-xl text-xl active:scale-95">+</button>
+            {(() => {
+              const exType = exerciseDef?.type || 'weighted';
+
+              if (exType === 'timed') return (
+                <div className="mb-6">
+                  <label className="block text-center text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Duração (seg)</label>
+                  <div className="flex items-center justify-between bg-zinc-950 rounded-2xl p-2 border border-zinc-800">
+                    <button onClick={() => setCurrentDuration(Math.max(1, currentDuration - 5))} className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-xl text-xl active:scale-95">-</button>
+                    <input type="number" value={currentDuration} onChange={e => setCurrentDuration(Math.max(1, parseInt(e.target.value) || 1))} className="w-16 text-3xl font-bold font-mono text-center bg-transparent focus:outline-none" />
+                    <button onClick={() => setCurrentDuration(currentDuration + 5)} className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-xl text-xl active:scale-95">+</button>
+                  </div>
                 </div>
-              </div>
-              <div className="flex-1">
-                <label className="block text-center text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Carga (kg)</label>
-                <div className="flex items-center justify-between bg-zinc-950 rounded-2xl p-2 border border-zinc-800">
-                  <button onClick={() => setCurrentWeight(Math.max(0, currentWeight - weightIncrement))} className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-xl text-xl active:scale-95">-</button>
-                  <input
-                    type="number"
-                    value={currentWeight}
-                    onChange={e => setCurrentWeight(Math.max(0, parseFloat(e.target.value) || 0))}
-                    className="w-16 text-3xl font-bold font-mono text-center bg-transparent focus:outline-none"
-                    step="0.5"
-                  />
-                  <button onClick={() => setCurrentWeight(currentWeight + weightIncrement)} className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-xl text-xl active:scale-95">+</button>
+              );
+
+              if (exType === 'reps_only') return (
+                <div className="mb-6">
+                  <label className="block text-center text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Reps</label>
+                  <div className="flex items-center justify-between bg-zinc-950 rounded-2xl p-2 border border-zinc-800">
+                    <button onClick={() => setCurrentReps(Math.max(1, currentReps - 1))} className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-xl text-xl active:scale-95">-</button>
+                    <input type="number" value={currentReps} onChange={e => setCurrentReps(Math.max(1, parseInt(e.target.value) || 1))} className="w-16 text-3xl font-bold font-mono text-center bg-transparent focus:outline-none" />
+                    <button onClick={() => setCurrentReps(currentReps + 1)} className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-xl text-xl active:scale-95">+</button>
+                  </div>
                 </div>
-              </div>
-            </div>
-            
+              );
+
+              if (exType === 'cardio') return (
+                <div className="flex gap-4 mb-6">
+                  <div className="flex-1">
+                    <label className="block text-center text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Tempo (min)</label>
+                    <div className="flex items-center justify-between bg-zinc-950 rounded-2xl p-2 border border-zinc-800">
+                      <button onClick={() => setCurrentDuration(Math.max(1, currentDuration - 1))} className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-xl text-xl active:scale-95">-</button>
+                      <input type="number" value={currentDuration} onChange={e => setCurrentDuration(Math.max(1, parseInt(e.target.value) || 1))} className="w-16 text-3xl font-bold font-mono text-center bg-transparent focus:outline-none" />
+                      <button onClick={() => setCurrentDuration(currentDuration + 1)} className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-xl text-xl active:scale-95">+</button>
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-center text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Distância (km)</label>
+                    <div className="flex items-center justify-between bg-zinc-950 rounded-2xl p-2 border border-zinc-800">
+                      <button onClick={() => setCurrentDistance(Math.max(0, parseFloat((currentDistance - 0.5).toFixed(1))))} className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-xl text-xl active:scale-95">-</button>
+                      <input type="number" value={currentDistance} onChange={e => setCurrentDistance(Math.max(0, parseFloat(e.target.value) || 0))} className="w-16 text-3xl font-bold font-mono text-center bg-transparent focus:outline-none" step="0.5" />
+                      <button onClick={() => setCurrentDistance(parseFloat((currentDistance + 0.5).toFixed(1)))} className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-xl text-xl active:scale-95">+</button>
+                    </div>
+                  </div>
+                </div>
+              );
+
+              return (
+                <div className="flex gap-4 mb-6">
+                  <div className="flex-1">
+                    <label className="block text-center text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Reps</label>
+                    <div className="flex items-center justify-between bg-zinc-950 rounded-2xl p-2 border border-zinc-800">
+                      <button onClick={() => setCurrentReps(Math.max(1, currentReps - 1))} className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-xl text-xl active:scale-95">-</button>
+                      <input type="number" value={currentReps} onChange={e => setCurrentReps(Math.max(1, parseInt(e.target.value) || 1))} className="w-16 text-3xl font-bold font-mono text-center bg-transparent focus:outline-none" />
+                      <button onClick={() => setCurrentReps(currentReps + 1)} className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-xl text-xl active:scale-95">+</button>
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-center text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Carga (kg)</label>
+                    <div className="flex items-center justify-between bg-zinc-950 rounded-2xl p-2 border border-zinc-800">
+                      <button onClick={() => setCurrentWeight(Math.max(0, currentWeight - weightIncrement))} className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-xl text-xl active:scale-95">-</button>
+                      <input type="number" value={currentWeight} onChange={e => setCurrentWeight(Math.max(0, parseFloat(e.target.value) || 0))} className="w-16 text-3xl font-bold font-mono text-center bg-transparent focus:outline-none" step="0.5" />
+                      <button onClick={() => setCurrentWeight(currentWeight + weightIncrement)} className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-xl text-xl active:scale-95">+</button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
             <button 
               onClick={completeSet}
               className="w-full bg-brand-500 text-zinc-950 py-4 rounded-2xl font-bold text-xl active:scale-[0.98] transition-transform shadow-[0_0_20px_rgba(255,178,0,0.3)]"
