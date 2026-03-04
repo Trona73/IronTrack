@@ -1913,7 +1913,22 @@ function ActiveWorkoutView({ plan, availableExercises, weightIncrement, onFinish
 
   // Timer state
   const [elapsed, setElapsed] = useState(0);
-  const [iconst [currentDuration, setCurrentDuration] = useState(() => {
+  const [isResting, setIsResting] = useState(false);
+  const [restTime, setRestTime] = useState(0);
+  const [currentDuration, setCurrentDuration] = useState(() => {
+    try {
+      const s = localStorage.getItem('iron_active_workout_state');
+      const saved = s ? JSON.parse(s) : null;
+      return saved?.planId === plan.id ? (saved.currentDuration || currentPlannedEx?.sets[0]?.duration || 30) : (currentPlannedEx?.sets[0]?.duration || 30);
+    } catch { return 30; }
+  });
+  const [currentDistance, setCurrentDistance] = useState(() => {
+    try {
+      const s = localStorage.getItem('iron_active_workout_state');
+      const saved = s ? JSON.parse(s) : null;
+      return saved?.planId === plan.id ? (saved.currentDistance || currentPlannedEx?.sets[0]?.distance || 0) : (currentPlannedEx?.sets[0]?.distance || 0);
+    } catch { return 0; }
+  });
     try {
       const s = localStorage.getItem('iron_active_workout_state');
       const saved = s ? JSON.parse(s) : null;
