@@ -1986,7 +1986,12 @@ function ActiveWorkoutView({ plan, availableExercises, onFinish, onCancel }: { p
                 <label className="block text-center text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Reps</label>
                 <div className="flex items-center justify-between bg-zinc-950 rounded-2xl p-2 border border-zinc-800">
                   <button onClick={() => setCurrentReps(Math.max(1, currentReps - 1))} className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-xl text-xl active:scale-95">-</button>
-                  <span className="text-3xl font-bold font-mono">{currentReps}</span>
+                  <input
+                    type="number"
+                    value={currentReps}
+                    onChange={e => setCurrentReps(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-16 text-3xl font-bold font-mono text-center bg-transparent focus:outline-none"
+                  />
                   <button onClick={() => setCurrentReps(currentReps + 1)} className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-xl text-xl active:scale-95">+</button>
                 </div>
               </div>
@@ -1994,7 +1999,13 @@ function ActiveWorkoutView({ plan, availableExercises, onFinish, onCancel }: { p
                 <label className="block text-center text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Carga (kg)</label>
                 <div className="flex items-center justify-between bg-zinc-950 rounded-2xl p-2 border border-zinc-800">
                   <button onClick={() => setCurrentWeight(Math.max(0, currentWeight - 2.5))} className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-xl text-xl active:scale-95">-</button>
-                  <span className="text-3xl font-bold font-mono">{currentWeight}</span>
+                  <input
+                    type="number"
+                    value={currentWeight}
+                    onChange={e => setCurrentWeight(Math.max(0, parseFloat(e.target.value) || 0))}
+                    className="w-16 text-3xl font-bold font-mono text-center bg-transparent focus:outline-none"
+                    step="0.5"
+                  />
                   <button onClick={() => setCurrentWeight(currentWeight + 2.5)} className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-xl text-xl active:scale-95">+</button>
                 </div>
               </div>
