@@ -1802,6 +1802,7 @@ function ActiveWorkoutView({ plan, availableExercises, weightIncrement, onFinish
   const [elapsed, setElapsed] = useState(0);
   const [isResting, setIsResting] = useState(false);
   const [restTime, setRestTime] = useState(0);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -1885,7 +1886,7 @@ function ActiveWorkoutView({ plan, availableExercises, weightIncrement, onFinish
       {/* Header */}
       <div className="p-6 pb-4 bg-zinc-900 border-b border-zinc-800 sticky top-0 z-10">
         <div className="flex justify-between items-center mb-4">
-          <button onClick={onCancel} className="text-zinc-400 hover:text-white">
+          <button onClick={() => setShowCancelConfirm(true)} className="text-zinc-400 hover:text-white">
             <X size={24} />
           </button>
           <div className="font-mono text-xl font-bold text-brand-400 tracking-wider">
@@ -2030,6 +2031,41 @@ function ActiveWorkoutView({ plan, availableExercises, weightIncrement, onFinish
           </button>
         )}
       </div>
+
+      <AnimatePresence>
+        {showCancelConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-sm w-full shadow-xl"
+            >
+              <h3 className="text-xl font-bold mb-2">Abandonar Treino?</h3>
+              <p className="text-zinc-400 mb-6">O progresso atual será perdido.</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowCancelConfirm(false)}
+                  className="flex-1 py-3 rounded-xl font-medium text-zinc-300 hover:bg-zinc-800 transition-colors"
+                >
+                  Continuar
+                </button>
+                <button
+                  onClick={onCancel}
+                  className="flex-1 py-3 rounded-xl font-bold bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
+                >
+                  Abandonar
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
