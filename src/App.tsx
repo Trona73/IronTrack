@@ -1479,12 +1479,21 @@ function BuilderView({
   
 
   const addExerciseToPlan = (exerciseId: string) => {
+    const exerciseDef = availableExercises.find(e => e.id === exerciseId);
+    const type = exerciseDef?.type || 'weighted';
+    
+    let defaultSet: PlannedSet;
+    if (type === 'timed') defaultSet = { duration: 30 };
+    else if (type === 'reps_only') defaultSet = { reps: 10 };
+    else if (type === 'cardio') defaultSet = { duration: 20, distance: 1 };
+    else defaultSet = { reps: 10, weight: 0 };
+
     setExercises(prev => [
       ...prev, 
       {
         id: Math.random().toString(36).substring(7),
         exerciseId,
-        sets: [{ reps: 10, weight: 0 }, { reps: 10, weight: 0 }, { reps: 10, weight: 0 }]
+        sets: [{ ...defaultSet }, { ...defaultSet }, { ...defaultSet }]
       }
     ]);
     setShowExercisePicker(false);
@@ -1658,34 +1667,72 @@ function BuilderView({
                   </div>
 
                   <div className="space-y-2">
-                    <div className="grid grid-cols-[3rem_1fr_1fr_3rem] gap-2 text-xs font-mono text-zinc-500 px-2 mb-1 select-none">
-                      <div className="text-center">Série</div>
-                      <div className="text-center">Reps</div>
-                      <div className="text-center">Carga (kg)</div>
-                      <div className="text-center"></div>
-                    </div>
-                    {ex.sets.map((set, sIdx) => (
-                      <div key={sIdx} className="grid grid-cols-[3rem_1fr_1fr_3rem] gap-2 items-center">
-                        <div className="bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800 select-none">
-                          {sIdx + 1}
-                        </div>
-                        <input 
-                          type="number" 
-                          value={set.reps || ''}
-                          onChange={e => updateSet(ex.id, sIdx, 'reps', parseInt(e.target.value) || 0)}
-                          className="w-full min-w-0 bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800 focus:outline-none focus:border-brand-500"
-                        />
-                        <input 
-                          type="number" 
-                          value={set.weight || ''}
-                          onChange={e => updateSet(ex.id, sIdx, 'weight', parseInt(e.target.value) || 0)}
-                          className="w-full min-w-0 bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800 focus:outline-none focus:border-brand-500"
-                        />
-                        <button onClick={() => removeSet(ex.id, sIdx)} className="text-zinc-600 hover:text-red-400 p-1 flex justify-center items-center h-full w-full">
-                          <X size={16} />
-                        </button>
-                      </div>
-                    ))}
+                    {(() => {
+                      const exType = exerciseDef?.type || 'weighted';
+                      if (exType === 'timed') return (
+                        <>
+                          <div className="grid grid-cols-[3rem_1fr_3rem] gap-2 text-xs font-mono text-zinc-500 px-2 mb-1 select-none">
+                            <div className="text-center">Série</div>
+                            <div className="text-center">Duração (seg)</div>
+                            <div className="text-center"></div>
+                          </div>
+                          {ex.sets.map((set, sIdx) => (
+                            <div key={sIdx} className="grid grid-cols-[3rem_1fr_3rem] gap-2 items-center">
+                              <div className="bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800 select-none">{sIdx + 1}</div>
+                              <input type="number" value={set.duration || ''} onChange={e => updateSet(ex.id, sIdx, 'duration', parseInt(e.target.value) || 0)} className="w-full min-w-0 bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800 focus:outline-none focus:border-brand-500" />
+                              <button onClick={() => removeSet(ex.id, sIdx)} className="text-zinc-600 hover:text-red-400 p-1 flex justify-center items-center h-full w-full"><X size={16} /></button>
+                            </div>
+                          ))}
+                        </>
+                      );
+                      if (exType === 'reps_only') return (
+                        <>
+                          <div className="grid grid-cols-[3rem_1fr_3rem] gap-2 text-xs font-mono text-zinc-500 px-2 mb-1 select-none">
+                            <div className="text-center">Série</div>
+                            <div className="text-center">Reps</div>
+                            <div className="text-center"></div>
+                          </div>
+                          {ex.sets.map((set, sIdx) => (
+                            <div key={sIdx} className="grid grid-cols-[3rem_1fr_3rem] gap-2 items-center">
+                              <div className="bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800 select-none">{sIdx + 1}</div>
+                              <input type="number" value={set.reps || ''} onChange={e => updateSet(ex.id, sIdx, 'reps', parseInt(e.target.value) || 0)} className="w-full min-w-0 bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800 focus:outline-none focus:border-brand-500" />
+                              <button onClick={() => removeSet(ex.id, sIdx)} className="text-zinc-600 hover:text-red-400 p-1 flex justify-center items-center h-full w-full"><X size={16} /></button>
+                            </div>
+                          ))}
+                        </>
+                      );
+                      if (exType === 'cardio') return (
+                        <>
+                          <div className="grid grid-cols-[3rem_1fr_1fr_3rem] gap-2 text-xs font-mono text-zinc-500 px-2 mb-1 select-none">
+                            <div className="text-center">Série</div>
+                            <div className="text-center">Tempo (min)</div>
+                            <div className="text-center">Dist (km)</div>
+                            <div className="text-center"></div>
+                          </div>
+                          {ex.sets.map((set, sIdx) => (
+                            <div key={sIdx} className="grid grid-cols-[3rem_1fr_1fr_3rem] gap-2 items-center">
+                              <div className="bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800 select-none">{sIdx + 1}</div>
+                              <input type="number" value={set.duration || ''} onChange={e => updateSet(ex.id, sIdx, 'duration', parseInt(e.target.value) || 0)} className="w-full min-w-0 bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800 focus:outline-none focus:border-brand-500" />
+                              <input type="number" value={set.distance || ''} onChange={e => updateSet(ex.id, sIdx, 'distance', parseFloat(e.target.value) || 0)} className="w-full min-w-0 bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800 focus:outline-none focus:border-brand-500" />
+                              <button onClick={() => removeSet(ex.id, sIdx)} className="text-zinc-600 hover:text-red-400 p-1 flex justify-center items-center h-full w-full"><X size={16} /></button>
+                            </div>
+                          ))}
+                        </>
+                      );
+                      return (
+                        <>
+                          <div className="grid grid-cols-[3rem_1fr_1fr_3rem] gap-2 text-xs font-mono text-zinc-500 px-2 mb-1 select-none">
+                            <div className="text-center">Série</div>
+                            <div className="text-center">Reps</div>
+                            <div className="text-center">Carga (kg)</div>
+                            <div className="text-center"></div>
+                          </div>
+                          {ex.sets.map((set, sIdx) => (
+                            <div key={sIdx} className="grid grid-cols-[3rem_1fr_1fr_3rem] gap-2 items-center">
+                              <div className="bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800 select-none">{sIdx + 1}</div>
+                              <input type="number" value={set.reps || ''} onChange={e => updateSet(ex.id, sIdx, 'reps', parseInt(e.target.value) || 0)} className="w-full min-w-0 bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800 focus:outline-none focus:border-brand-500" />
+                              <input type="number" value={set.weight || ''} onChange={e => updateSet(ex.id, sIdx, 'weight', parseInt(e.target.value) || 0)} className="w-full min-w-0 bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800 focus:outline-none focus:border-brand-500" />
+                              <button onClick={() => removeSet(ex.id, sIdx)} className="tex
                     <button 
                       onClick={() => addSet(ex.id)}
                       className="w-full mt-2 py-2 border border-dashed border-zinc-700 rounded-lg text-xs font-medium text-zinc-400 hover:text-brand-400 hover:border-brand-500/50 transition-colors"
