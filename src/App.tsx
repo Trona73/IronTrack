@@ -1811,24 +1811,53 @@ function ListManager({ title, items, onUpdate, onClose }: { title: string, items
 // --- Active Workout View ---
 function ActiveWorkoutView({ plan, availableExercises, weightIncrement, onFinish, onCancel }: { plan: WorkoutPlan, availableExercises: Exercise[], weightIncrement: number, onFinish: (s: WorkoutSession) => void, onCancel: () => void, key?: React.Key }) {
   const [startTime] = useState(new Date().toISOString());
-  const [currentExIndex, setCurrentExIndex] = useState(savedState?.planId === plan.id ? (savedState.currentExIndex || 0) : 0);
-  const [completedExercises, setCompletedExercises] = useState<CompletedExercise[]>(savedState?.planId === plan.id ? (savedState.completedExercises || []) : []);
+  const [currentExIndex, setCurrentExIndex] = useState(() => {
+    try {
+      const s = localStorage.getItem('iron_active_workout_state');
+      const saved = s ? JSON.parse(s) : null;
+      return saved?.planId === plan.id ? (saved.currentExIndex || 0) : 0;
+    } catch { return 0; }
+  });
+  const [completedExercises, setCompletedExercises] = useState<CompletedExercise[]>(() => {
+    try {
+      const s = localStorage.getItem('iron_active_workout_state');
+      const saved = s ? JSON.parse(s) : null;
+      return saved?.planId === plan.id ? (saved.completedExercises || []) : [];
+    } catch { return []; }
+  });
   
   // State for current exercise being performed
   const currentPlannedEx = plan.exercises[currentExIndex];
   const exerciseDef = availableExercises.find(e => e.id === currentPlannedEx?.exerciseId);
   
-  const savedState = (() => {
+  const [currentSets, setCurrentSets] = useState<CompletedSet[]>(() => {
     try {
       const s = localStorage.getItem('iron_active_workout_state');
-      return s ? JSON.parse(s) : null;
-    } catch { return null; }
-  })();
-
-  const [currentSets, setCurrentSets] = useState<CompletedSet[]>(savedState?.planId === plan.id ? (savedState.currentSets || []) : []);
-  const [currentReps, setCurrentReps] = useState(savedState?.planId === plan.id ? (savedState.currentReps || currentPlannedEx?.sets[0]?.reps || 10) : (currentPlannedEx?.sets[0]?.reps || 10));
-  const [currentWeight, setCurrentWeight] = useState(savedState?.planId === plan.id ? (savedState.currentWeight || currentPlannedEx?.sets[0]?.weight || 0) : (currentPlannedEx?.sets[0]?.weight || 0));
-  const [exStartTime, setExStartTime] = useState(savedState?.planId === plan.id ? (savedState.exStartTime || Date.now()) : Date.now());
+      const saved = s ? JSON.parse(s) : null;
+      return saved?.planId === plan.id ? (saved.currentSets || []) : [];
+    } catch { return []; }
+  });
+  const [currentReps, setCurrentReps] = useState(() => {
+    try {
+      const s = localStorage.getItem('iron_active_workout_state');
+      const saved = s ? JSON.parse(s) : null;
+      return saved?.planId === plan.id ? (saved.currentReps || currentPlannedEx?.sets[0]?.reps || 10) : (currentPlannedEx?.sets[0]?.reps || 10);
+    } catch { return currentPlannedEx?.sets[0]?.reps || 10; }
+  });
+  const [currentWeight, setCurrentWeight] = useState(() => {
+    try {
+      const s = localStorage.getItem('iron_active_workout_state');
+      const saved = s ? JSON.parse(s) : null;
+      return saved?.planId === plan.id ? (saved.currentWeight || currentPlannedEx?.sets[0]?.weight || 0) : (currentPlannedEx?.sets[0]?.weight || 0);
+    } catch { return currentPlannedEx?.sets[0]?.weight || 0; }
+  });
+  const [exStartTime, setExStartTime] = useState(() => {
+    try {
+      const s = localStorage.getItem('iron_active_workout_state');
+      const saved = s ? JSON.parse(s) : null;
+      return saved?.planId === plan.id ? (saved.exStartTime || Date.now()) : Date.now();
+    } catch { return Date.now(); }
+  });
 
   // Timer state
   const [elapsed, setElapsed] = useState(0);
