@@ -613,6 +613,7 @@ useEffect(() => {
               key="active" 
               plan={activePlan} 
               availableExercises={exercises}
+              weightIncrement={userProfile.weightIncrement || 1}
               onFinish={finishWorkout}
               onCancel={() => {
                 setActivePlan(null);
@@ -1783,7 +1784,7 @@ function ListManager({ title, items, onUpdate, onClose }: { title: string, items
 }
 
 // --- Active Workout View ---
-function ActiveWorkoutView({ plan, availableExercises, onFinish, onCancel }: { plan: WorkoutPlan, availableExercises: Exercise[], onFinish: (s: WorkoutSession) => void, onCancel: () => void, key?: React.Key }) {
+function ActiveWorkoutView({ plan, availableExercises, weightIncrement, onFinish, onCancel }: { plan: WorkoutPlan, availableExercises: Exercise[], weightIncrement: number, onFinish: (s: WorkoutSession) => void, onCancel: () => void, key?: React.Key }) {
   const [startTime] = useState(new Date().toISOString());
   const [currentExIndex, setCurrentExIndex] = useState(0);
   const [completedExercises, setCompletedExercises] = useState<CompletedExercise[]>([]);
@@ -1998,7 +1999,7 @@ function ActiveWorkoutView({ plan, availableExercises, onFinish, onCancel }: { p
               <div className="flex-1">
                 <label className="block text-center text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Carga (kg)</label>
                 <div className="flex items-center justify-between bg-zinc-950 rounded-2xl p-2 border border-zinc-800">
-                  <button onClick={() => setCurrentWeight(Math.max(0, currentWeight - 2.5))} className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-xl text-xl active:scale-95">-</button>
+                  <button onClick={() => setCurrentWeight(Math.max(0, currentWeight - weightIncrement))} className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-xl text-xl active:scale-95">-</button>
                   <input
                     type="number"
                     value={currentWeight}
@@ -2006,7 +2007,7 @@ function ActiveWorkoutView({ plan, availableExercises, onFinish, onCancel }: { p
                     className="w-16 text-3xl font-bold font-mono text-center bg-transparent focus:outline-none"
                     step="0.5"
                   />
-                  <button onClick={() => setCurrentWeight(currentWeight + 2.5)} className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-xl text-xl active:scale-95">+</button>
+                  <button onClick={() => setCurrentWeight(currentWeight + weightIncrement)} className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-xl text-xl active:scale-95">+</button>
                 </div>
               </div>
             </div>
@@ -2804,37 +2805,19 @@ function SettingsView({ onBack, profile, onUpdateProfile }: { onBack: () => void
           
           <div>
             <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">
-              Dia de Início da Semana de Treino
+              Incremento de Carga (kg)
             </label>
             <select 
-              value={profile.trainingStartDay !== undefined ? profile.trainingStartDay : 1}
-              onChange={(e) => handleChangeStartDay(parseInt(e.target.value))}
+              value={profile.weightIncrement || 1}
+              onChange={(e) => onUpdateProfile({ ...profile, weightIncrement: parseInt(e.target.value) })}
               className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors appearance-none"
             >
-              {days.map(day => (
-                <option key={day.value} value={day.value}>{day.label}</option>
+              {[1, 2, 3, 5, 10].map(val => (
+                <option key={val} value={val}>{val} kg</option>
               ))}
             </select>
             <p className="text-xs text-zinc-500 mt-2">
-              Define qual dia da semana inicia seu ciclo de treino semanal.
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">
-              Objetivo de Treino (Frequência)
-            </label>
-            <select 
-              value={profile.weeklyTrainingGoal || 3}
-              onChange={(e) => onUpdateProfile({ ...profile, weeklyTrainingGoal: parseInt(e.target.value) })}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors appearance-none"
-            >
-              {[1, 2, 3, 4, 5, 6, 7].map(days => (
-                <option key={days} value={days}>{days} {days === 1 ? 'dia' : 'dias'} por semana</option>
-              ))}
-            </select>
-            <p className="text-xs text-zinc-500 mt-2">
-              Quantos dias por semana você pretende treinar.
+              Valor usado nos botões + e - de carga durante o treino.
             </p>
           </div>
         </div>
