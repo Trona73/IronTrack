@@ -2886,6 +2886,9 @@ function ProfileView({ profile, onSave, onLogout }: { profile: UserProfile, onSa
           <div>
             <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Nome</label>
             {isEditing ? (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-4">
+            <div>
+              <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Nome</label>
               <input 
                 type="text" 
                 value={localProfile.name}
@@ -2893,14 +2896,9 @@ function ProfileView({ profile, onSave, onLogout }: { profile: UserProfile, onSa
                 className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors"
                 placeholder="Seu nome"
               />
-            ) : (
-              <div className="text-xl font-medium">{profile.name || 'Não informado'}</div>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Email</label>
-            {isEditing ? (
+            </div>
+            <div>
+              <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Email</label>
               <input 
                 type="email" 
                 value={localProfile.email || ''}
@@ -2908,12 +2906,7 @@ function ProfileView({ profile, onSave, onLogout }: { profile: UserProfile, onSa
                 className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors"
                 placeholder="seu@email.com"
               />
-            ) : (
-              <div className="text-xl font-medium">{profile.email || '-'}</div>
-            )}
-          </div>
-
-          {isEditing && (
+            </div>
             <div>
               <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Senha</label>
               <div className="relative">
@@ -2933,12 +2926,9 @@ function ProfileView({ profile, onSave, onLogout }: { profile: UserProfile, onSa
                 </button>
               </div>
             </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Peso (kg)</label>
-              {isEditing ? (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Peso (kg)</label>
                 <input 
                   type="number" 
                   value={localProfile.weight || ''}
@@ -2946,13 +2936,9 @@ function ProfileView({ profile, onSave, onLogout }: { profile: UserProfile, onSa
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors"
                   placeholder="0.0"
                 />
-              ) : (
-                <div className="text-xl font-medium">{profile.weight ? `${profile.weight} kg` : '-'}</div>
-              )}
-            </div>
-            <div>
-              <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Altura (cm)</label>
-              {isEditing ? (
+              </div>
+              <div>
+                <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Altura (cm)</label>
                 <input 
                   type="number" 
                   value={localProfile.height || ''}
@@ -2960,16 +2946,11 @@ function ProfileView({ profile, onSave, onLogout }: { profile: UserProfile, onSa
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors"
                   placeholder="0"
                 />
-              ) : (
-                <div className="text-xl font-medium">{profile.height ? `${profile.height} cm` : '-'}</div>
-              )}
+              </div>
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Idade</label>
-              {isEditing ? (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Idade</label>
                 <input 
                   type="number" 
                   value={localProfile.age || ''}
@@ -2977,13 +2958,9 @@ function ProfileView({ profile, onSave, onLogout }: { profile: UserProfile, onSa
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors"
                   placeholder="0"
                 />
-              ) : (
-                <div className="text-xl font-medium">{profile.age ? `${profile.age} anos` : '-'}</div>
-              )}
-            </div>
-            <div>
-              <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Gênero</label>
-              {isEditing ? (
+              </div>
+              <div>
+                <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Gênero</label>
                 <select 
                   value={localProfile.gender}
                   onChange={e => handleChange('gender', e.target.value)}
@@ -2993,17 +2970,10 @@ function ProfileView({ profile, onSave, onLogout }: { profile: UserProfile, onSa
                   <option value="female">Feminino</option>
                   <option value="other">Outro</option>
                 </select>
-              ) : (
-                <div className="text-xl font-medium">
-                  {profile.gender === 'male' ? 'Masculino' : profile.gender === 'female' ? 'Feminino' : 'Outro'}
-                </div>
-              )}
+              </div>
             </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Condição Física</label>
-            {isEditing ? (
+            <div>
+              <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Condição Física</label>
               <select 
                 value={localProfile.activityLevel || ''}
                 onChange={e => handleChange('activityLevel', e.target.value)}
@@ -3016,22 +2986,9 @@ function ProfileView({ profile, onSave, onLogout }: { profile: UserProfile, onSa
                 <option value="very_active">Muito ativo (atividade até 6 dias/sem)</option>
                 <option value="extremely_active">Extremamente ativo (atividade 7 dias/sem)</option>
               </select>
-            ) : (
-              <div className="text-xl font-medium">
-                {{
-                  sedentary: 'Sedentário (pouco/nenhum exercício)',
-                  lightly_active: 'Levemente ativo (atividade até 2 dias/sem)',
-                  moderately_active: 'Moderadamente ativo (atividade até 4 dias/sem)',
-                  very_active: 'Muito ativo (atividade até 6 dias/sem)',
-                  extremely_active: 'Extremamente ativo (atividade 7 dias/sem)'
-                }[profile.activityLevel || ''] || '-- selecionar --'}
-              </div>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Defina o Objetivo</label>
-            {isEditing ? (
+            </div>
+            <div>
+              <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Defina o Objetivo</label>
               <select 
                 value={localProfile.goal || ''}
                 onChange={e => handleChange('goal', e.target.value)}
@@ -3042,18 +2999,56 @@ function ProfileView({ profile, onSave, onLogout }: { profile: UserProfile, onSa
                 <option value="weight_loss">Perda de Peso</option>
                 <option value="muscle_gain">Ganho de Massa</option>
               </select>
-            ) : (
-              <div className="text-xl font-medium">
-                {{
-                  maintenance: 'Manutenção',
-                  weight_loss: 'Perda de Peso',
-                  muscle_gain: 'Ganho de Massa'
-                }[profile.goal || ''] || '-- selecionar --'}
-              </div>
-            )}
+            </div>
           </div>
-        </div>
-
+        ) : (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+            <div className="flex items-center gap-4 mb-5">
+              <div className="w-14 h-14 rounded-full bg-zinc-800 border-2 border-brand-500 flex items-center justify-center text-brand-500 font-bold text-2xl flex-shrink-0">
+                {profile.name ? profile.name.charAt(0).toUpperCase() : '?'}
+              </div>
+              <div>
+                <div className="text-xl font-bold">{profile.name || 'Sem nome'}</div>
+                <div className="text-xs text-zinc-500 mt-0.5">{profile.email || '-'}</div>
+              </div>
+            </div>
+            <div className="grid grid-cols-4 gap-px bg-zinc-700 rounded-2xl overflow-hidden mb-3">
+              {[
+                { val: profile.weight ? `${profile.weight}` : '-', label: 'kg' },
+                { val: profile.height ? `${profile.height}` : '-', label: 'cm' },
+                { val: profile.age ? `${profile.age}` : '-', label: 'anos' },
+                { val: profile.gender === 'male' ? 'M' : profile.gender === 'female' ? 'F' : '-', label: 'gênero' },
+              ].map((item, i) => (
+                <div key={i} className="bg-zinc-900 py-3 px-2 text-center">
+                  <div className="text-lg font-bold text-zinc-100">{item.val}</div>
+                  <div className="text-[10px] text-zinc-500 uppercase tracking-wider mt-0.5">{item.label}</div>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {profile.activityLevel && (
+                <span className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-400">
+                  {{
+                    sedentary: 'Sedentário',
+                    lightly_active: 'Levemente Ativo',
+                    moderately_active: 'Moderadamente Ativo',
+                    very_active: 'Muito Ativo',
+                    extremely_active: 'Extremamente Ativo'
+                  }[profile.activityLevel]}
+                </span>
+              )}
+              {profile.goal && (
+                <span className="bg-brand-500/5 border border-brand-500/30 rounded-lg px-3 py-1.5 text-xs text-brand-500">
+                  ⚡ {{
+                    maintenance: 'Manutenção',
+                    weight_loss: 'Perda de Peso',
+                    muscle_gain: 'Ganho de Massa'
+                  }[profile.goal]}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
         {/* Stats Summary */}
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
