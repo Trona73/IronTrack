@@ -1930,15 +1930,22 @@ function ActiveWorkoutView({ plan, availableExercises, weightIncrement, onFinish
     } catch { return 0; }
   });
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
+  useEffect(() => {
+    const state = {
+      planId: plan.id,
+      currentExIndex,
       completedExercises,
       currentSets,
       currentReps,
       currentWeight,
+      currentDuration,
+      currentDistance,
       startTime,
       exStartTime
     };
     localStorage.setItem('iron_active_workout_state', JSON.stringify(state));
-  }, [currentExIndex, completedExercises, currentSets, currentReps, currentWeight]);
+  }, [currentExIndex, completedExercises, currentSets, currentReps, currentWeight, currentDuration, currentDistance]);
 
   useEffect(() => {
     const interval = setInterval(() => {
