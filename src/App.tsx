@@ -1732,7 +1732,12 @@ function BuilderView({
                               <div className="bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800 select-none">{sIdx + 1}</div>
                               <input type="number" value={set.reps || ''} onChange={e => updateSet(ex.id, sIdx, 'reps', parseInt(e.target.value) || 0)} className="w-full min-w-0 bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800 focus:outline-none focus:border-brand-500" />
                               <input type="number" value={set.weight || ''} onChange={e => updateSet(ex.id, sIdx, 'weight', parseInt(e.target.value) || 0)} className="w-full min-w-0 bg-zinc-950 rounded-lg p-2 text-center font-mono text-sm border border-zinc-800 focus:outline-none focus:border-brand-500" />
-                              <button onClick={() => removeSet(ex.id, sIdx)} className="tex
+<button onClick={() => removeSet(ex.id, sIdx)} className="text-zinc-600 hover:text-red-400 p-1 flex justify-center items-center h-full w-full"><X size={16} /></button>
+                            </div>
+                          ))}
+                        </>
+                      );
+                    })()}
                     <button 
                       onClick={() => addSet(ex.id)}
                       className="w-full mt-2 py-2 border border-dashed border-zinc-700 rounded-lg text-xs font-medium text-zinc-400 hover:text-brand-400 hover:border-brand-500/50 transition-colors"
