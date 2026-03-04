@@ -434,16 +434,40 @@ useEffect(() => {
       }
     }
   };
+const resumeWorkout = () => {
+    const savedState = localStorage.getItem('iron_active_workout_state');
+    if (savedState) {
+      const state = JSON.parse(savedState);
+      const plan = plans.find(p => p.id === state.planId);
+      if (plan) {
+        setActivePlan(plan);
+        setCurrentView('active');
+      }
+    }
+  };
 
+  useEffect(() => {
+    const savedState = localStorage.getItem('iron_active_workout_state');
+    if (savedState && isSupabaseLoaded && !showAuth) {
+      const state = JSON.parse(savedState);
+      const plan = plans.find(p => p.id === state.planId);
+      if (plan) {
+        setActivePlan(plan);
+        setCurrentView('active');
+      }
+    }
+  }, [isSupabaseLoaded, showAuth]);
   const startWorkout = (plan: WorkoutPlan) => {
     setActivePlan(plan);
     setCurrentView('active');
+    localStorage.setItem('iron_active_workout', JSON.stringify({ planId: plan.id, startedAt: new Date().toISOString() }));
   };
 
   const finishWorkout = async (session: WorkoutSession) => {
     setSessions(prev => [session, ...prev]);
     setActivePlan(null);
     setCurrentView('dashboard');
+    localStorage.removeItem('iron_active_workout');
 
     if (supabaseSession) {
       try {
@@ -535,6 +559,7 @@ useEffect(() => {
     localStorage.removeItem('iron_exercises_v2');
     localStorage.removeItem('iron_muscle_groups');
     localStorage.removeItem('iron_equipment');
+    localStorage.removeItem('iron_active_workout');
   };
 
 
@@ -1786,23 +1811,43 @@ function ListManager({ title, items, onUpdate, onClose }: { title: string, items
 // --- Active Workout View ---
 function ActiveWorkoutView({ plan, availableExercises, weightIncrement, onFinish, onCancel }: { plan: WorkoutPlan, availableExercises: Exercise[], weightIncrement: number, onFinish: (s: WorkoutSession) => void, onCancel: () => void, key?: React.Key }) {
   const [startTime] = useState(new Date().toISOString());
-  const [currentExIndex, setCurrentExIndex] = useState(0);
-  const [completedExercises, setCompletedExercises] = useState<CompletedExercise[]>([]);
+  const [currentExIndex, setCurrentExIndex] = useState(savedState?.planId === plan.id ? (savedState.currentExIndex || 0) : 0);
+  const [completedExercises, setCompletedExercises] = useState<CompletedExercise[]>(savedState?.planId === plan.id ? (savedState.completedExercises || []) : []);
   
   // State for current exercise being performed
   const currentPlannedEx = plan.exercises[currentExIndex];
   const exerciseDef = availableExercises.find(e => e.id === currentPlannedEx?.exerciseId);
   
-  const [currentSets, setCurrentSets] = useState<CompletedSet[]>([]);
-  const [currentReps, setCurrentReps] = useState(currentPlannedEx?.sets[0]?.reps || 10);
-  const [currentWeight, setCurrentWeight] = useState(currentPlannedEx?.sets[0]?.weight || 0);
-  const [exStartTime, setExStartTime] = useState(Date.now());
+  const savedState = (() => {
+    try {
+      const s = localStorage.getItem('iron_active_workout_state');
+      return s ? JSON.parse(s) : null;
+    } catch { return null; }
+  })();
+
+  const [currentSets, setCurrentSets] = useState<CompletedSet[]>(savedState?.planId === plan.id ? (savedState.currentSets || []) : []);
+  const [currentReps, setCurrentReps] = useState(savedState?.planId === plan.id ? (savedState.currentReps || currentPlannedEx?.sets[0]?.reps || 10) : (currentPlannedEx?.sets[0]?.reps || 10));
+  const [currentWeight, setCurrentWeight] = useState(savedState?.planId === plan.id ? (savedState.currentWeight || currentPlannedEx?.sets[0]?.weight || 0) : (currentPlannedEx?.sets[0]?.weight || 0));
+  const [exStartTime, setExStartTime] = useState(savedState?.planId === plan.id ? (savedState.exStartTime || Date.now()) : Date.now());
 
   // Timer state
   const [elapsed, setElapsed] = useState(0);
   const [isResting, setIsResting] = useState(false);
   const [restTime, setRestTime] = useState(0);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  useEffect(() => {
+    const state = {
+      planId: plan.id,
+      currentExIndex,
+      completedExercises,
+      currentSets,
+      currentReps,
+      currentWeight,
+      startTime,
+      exStartTime
+    };
+    localStorage.setItem('iron_active_workout_state', JSON.stringify(state));
+  }, [currentExIndex, completedExercises, currentSets, currentReps, currentWeight]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -2056,7 +2101,7 @@ function ActiveWorkoutView({ plan, availableExercises, weightIncrement, onFinish
                   Continuar
                 </button>
                 <button
-                  onClick={onCancel}
+                  onClick={() => { localStorage.removeItem('iron_active_workout_state'); onCancel(); }}
                   className="flex-1 py-3 rounded-xl font-bold bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
                 >
                   Abandonar
