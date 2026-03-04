@@ -1929,20 +1929,6 @@ function ActiveWorkoutView({ plan, availableExercises, weightIncrement, onFinish
       return saved?.planId === plan.id ? (saved.currentDistance || currentPlannedEx?.sets[0]?.distance || 0) : (currentPlannedEx?.sets[0]?.distance || 0);
     } catch { return 0; }
   });
-    try {
-      const s = localStorage.getItem('iron_active_workout_state');
-      const saved = s ? JSON.parse(s) : null;
-      return saved?.planId === plan.id ? (saved.currentDuration || currentPlannedEx?.sets[0]?.duration || 30) : (currentPlannedEx?.sets[0]?.duration || 30);
-    } catch { return 30; }
-  });
-  const [currentDistance, setCurrentDistance] = useState(() => {
-    try {
-      const s = localStorage.getItem('iron_active_workout_state');
-      const saved = s ? JSON.parse(s) : null;
-      return saved?.planId === plan.id ? (saved.currentDistance || currentPlannedEx?.sets[0]?.distance || 0) : (currentPlannedEx?.sets[0]?.distance || 0);
-    } catch { return 0; }
-  });sResting, setIsResting] = useState(false);
-  const [restTime, setRestTime] = useState(0);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [currentDuration, setCurrentDuration] = useState(() => {
     try {
