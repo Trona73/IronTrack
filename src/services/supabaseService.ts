@@ -55,7 +55,8 @@ export const supabaseService = {
         muscle_group: exercise.muscleGroup,
         description: exercise.description,
         image_url: exercise.imageUrl,
-        video_url: exercise.videoUrl
+        video_url: exercise.videoUrl,
+        type: exercise.type || 'weighted'
       })
       .eq('id', exercise.id);
 
