@@ -2706,6 +2706,7 @@ function ExercisesView({
     setNewExerciseName(ex.name);
     setNewExerciseMuscle(ex.muscleGroup);
     setNewExerciseEquipment(ex.equipment);
+    setNewExerciseType(ex.type || 'weighted');
     setShowCreate(true);
   };
 
