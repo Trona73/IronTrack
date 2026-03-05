@@ -2524,6 +2524,33 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory }: { 
                         const totalDist = history.reduce((acc, h) => acc + h.sets.reduce((a, s) => a + (s.distance || 0), 0), 0);
                         const totalTime = history.reduce((acc, h) => acc + h.sets.reduce((a, s) => a + (s.duration || 0), 0), 0);
                         const speed = totalTime > 0 ? (totalDist / (totalTime / 60)) : 0;
+                        const pace = totalDist > 0 ? (totalTime / totalDist) : 0;
+                        return (
+                          <div className="flex flex-wrap gap-1">
+                            {[
+                              `${totalDist.toFixed(1)}km`,
+                              `${totalTime}min`,
+                              `${speed.toFixed(1)}km/h`,
+                              `${Math.floor(pace)}:${String(Math.round((pace % 1) * 60)).padStart(2, '0')}min/km`
+                            ].map(tag => (
+                              <span key={tag} className="bg-zinc-800 text-zinc-400 font-mono text-[10px] px-2 py-0.5 rounded-full">{tag}</span>
+                            ))}
+                          </div>
+                        );
+                      })() : (
+                        <div className="text-xs text-zinc-500 font-mono">
+                          {exType === 'timed'
+                            ? `Total: ${history[0].sets.reduce((acc, s) => acc + (s.duration || 0), 0)}seg`
+                            : exType === 'reps_only'
+                            ? `Última: ${latestMaxWeight} reps`
+                            : `Última: ${latestMaxWeight}kg`}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <ChevronRight size={20} className={`text-zinc-600 transition-transform duration-300 flex-shrink-0 ml-2 ${isExpanded ? 'rotate-90' : ''}`} />
+                </button>
 
                 {/* Expanded Details */}
                 <AnimatePresence>
