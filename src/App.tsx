@@ -2376,13 +2376,19 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory }: { 
   }
 
   // Helper to calculate total volume of a session
-  const calculateVolume = (sets: CompletedSet[]) => {
-    return sets.reduce((acc, set) => acc + (set.weight * set.reps), 0);
+  const calculateVolume = (sets: CompletedSet[], exType?: string) => {
+    if (exType === 'timed') return sets.reduce((acc, s) => acc + (s.duration || 0), 0);
+    if (exType === 'cardio') return sets.reduce((acc, s) => acc + (s.distance || 0), 0);
+    if (exType === 'reps_only') return sets.reduce((acc, s) => acc + (s.reps || 0), 0);
+    return sets.reduce((acc, s) => acc + ((s.weight || 0) * (s.reps || 0)), 0);
   };
 
   // Helper to get max weight of a session
-  const getMaxWeight = (sets: CompletedSet[]) => {
-    return Math.max(...sets.map(s => s.weight));
+  const getMaxWeight = (sets: CompletedSet[], exType?: string) => {
+    if (exType === 'timed') return Math.max(...sets.map(s => s.duration || 0));
+    if (exType === 'cardio') return Math.max(...sets.map(s => s.distance || 0));
+    if (exType === 'reps_only') return Math.max(...sets.map(s => s.reps || 0));
+    return Math.max(...sets.map(s => s.weight || 0));
   };
 
   // Calculate stats for new cards
@@ -2571,11 +2577,12 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory }: { 
             const latestSession = history[0];
             const previousSession = history.length > 1 ? history[1] : null;
             
-            const latestVolume = calculateVolume(latestSession.sets);
-            const previousVolume = previousSession ? calculateVolume(previousSession.sets) : 0;
+            const exType = exerciseDef?.type || 'weighted';
+            const latestVolume = calculateVolume(latestSession.sets, exType);
+            const previousVolume = previousSession ? calculateVolume(previousSession.sets, exType) : 0;
             const volumeDelta = previousSession ? latestVolume - previousVolume : 0;
             
-            const latestMaxWeight = getMaxWeight(latestSession.sets);
+            const latestMaxWeight = getMaxWeight(latestSession.sets, exType);
 
             const isExpanded = expandedExerciseId === exId;
 
@@ -2589,7 +2596,7 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory }: { 
                   <div className="text-left">
                     <h3 className="font-bold text-zinc-200">{exerciseDef?.name || 'Ex. Desconhecido'}</h3>
                     <div className="text-xs text-zinc-500 font-mono mt-1">
-                      Última: {latestMaxWeight}kg
+                      {exType === 'timed' ? `Última: ${latestMaxWeight}seg` : exType === 'cardio' ? `Última: ${latestMaxWeight}km` : exType === 'reps_only' ? `Última: ${latestMaxWeight} reps` : `Última: ${latestMaxWeight}kg`}
                     </div>
                   </div>
                   
@@ -2624,26 +2631,30 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory }: { 
                           <thead>
                             <tr className="text-zinc-500 border-b border-zinc-800/50">
                               <th className="pb-2 font-normal">DATA</th>
-                              <th className="pb-2 font-normal text-center">CARGA</th>
-                              <th className="pb-2 font-normal text-center">REPS</th>
+                              <th className="pb-2 font-normal text-center">{exType === 'timed' ? 'DURAÇÃO' : exType === 'cardio' ? 'DIST' : exType === 'reps_only' ? 'REPS' : 'CARGA'}</th>
+                              <th className="pb-2 font-normal text-center">{exType === 'weighted' ? 'REPS' : ''}</th>
                               <th className="pb-2 font-normal text-right">VOL Δ</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-zinc-800/30">
                             {history.slice(0, 5).map((entry, idx) => {
-                              const entryVolume = calculateVolume(entry.sets);
-                              // Compare with the NEXT entry in the array (which is the previous chronological session)
+                              const entryVolume = calculateVolume(entry.sets, exType);
                               const prevEntry = history[idx + 1];
-                              const prevEntryVolume = prevEntry ? calculateVolume(prevEntry.sets) : 0;
+                              const prevEntryVolume = prevEntry ? calculateVolume(prevEntry.sets, exType) : 0;
                               const delta = prevEntry ? entryVolume - prevEntryVolume : 0;
-                              const maxWeight = getMaxWeight(entry.sets);
-                              const totalReps = entry.sets.reduce((acc, s) => acc + s.reps, 0);
+                              const col1 = (() => {
+                                if (exType === 'timed') return `${getMaxWeight(entry.sets, exType)}seg`;
+                                if (exType === 'cardio') return `${getMaxWeight(entry.sets, exType)}km`;
+                                if (exType === 'reps_only') return `${getMaxWeight(entry.sets, exType)}`;
+                                return `${getMaxWeight(entry.sets, exType)}kg`;
+                              })();
+                              const col2 = exType === 'weighted' ? entry.sets.reduce((acc, s) => acc + (s.reps || 0), 0) : '';
 
                               return (
                                 <tr key={idx} className="text-zinc-300">
                                   <td className="py-2">{entry.date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</td>
-                                  <td className="py-2 text-center">{maxWeight}kg</td>
-                                  <td className="py-2 text-center">{totalReps}</td>
+                                  <td className="py-2 text-center">{col1}</td>
+                                  <td className="py-2 text-center">{col2}</td>
                                   <td className={`py-2 text-right font-bold ${delta > 0 ? 'text-brand-500' : delta < 0 ? 'text-red-500' : 'text-zinc-600'}`}>
                                     {prevEntry ? (delta > 0 ? `+${delta}` : delta) : '-'}
                                   </td>
