@@ -2631,8 +2631,8 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory }: { 
                           <thead>
                             <tr className="text-zinc-500 border-b border-zinc-800/50">
                               <th className="pb-2 font-normal">DATA</th>
-                              <th className="pb-2 font-normal text-center">{exType === 'timed' ? 'DURAÇÃO' : exType === 'cardio' ? 'DIST' : exType === 'reps_only' ? 'REPS' : 'CARGA'}</th>
-                              <th className="pb-2 font-normal text-center">{exType === 'weighted' ? 'REPS' : ''}</th>
+                              <th className="pb-2 font-normal text-center">{exType === 'timed' ? 'DURAÇÃO' : exType === 'cardio' ? 'TEMPO' : exType === 'reps_only' ? 'REPS' : 'CARGA'}</th>
+                              <th className="pb-2 font-normal text-center">{exType === 'weighted' ? 'REPS' : exType === 'cardio' ? 'DIST' : ''}</th>
                               <th className="pb-2 font-normal text-right">VOL Δ</th>
                             </tr>
                           </thead>
@@ -2644,11 +2644,11 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory }: { 
                               const delta = prevEntry ? entryVolume - prevEntryVolume : 0;
                               const col1 = (() => {
                                 if (exType === 'timed') return `${getMaxWeight(entry.sets, exType)}seg`;
-                                if (exType === 'cardio') return `${getMaxWeight(entry.sets, exType)}km`;
+                                if (exType === 'cardio') return `${entry.sets.reduce((acc, s) => acc + (s.duration || 0), 0)}min`;
                                 if (exType === 'reps_only') return `${getMaxWeight(entry.sets, exType)}`;
                                 return `${getMaxWeight(entry.sets, exType)}kg`;
                               })();
-                              const col2 = exType === 'weighted' ? entry.sets.reduce((acc, s) => acc + (s.reps || 0), 0) : '';
+                              const col2 = exType === 'weighted' ? entry.sets.reduce((acc, s) => acc + (s.reps || 0), 0) : exType === 'cardio' ? `${entry.sets.reduce((acc, s) => acc + (s.distance || 0), 0)}km` : '';
 
                               return (
                                 <tr key={idx} className="text-zinc-300">
