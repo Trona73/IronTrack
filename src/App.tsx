@@ -2091,8 +2091,8 @@ function ActiveWorkoutView({ plan, availableExercises, weightIncrement, onFinish
         <div className="space-y-2 mb-8 flex-1 overflow-y-auto">
           <div className="grid grid-cols-[auto_1fr_1fr_auto] gap-4 text-xs font-mono text-zinc-500 px-4 mb-2">
             <div className="w-8">Série</div>
-            <div className="text-center">Reps</div>
-            <div className="text-center">Carga</div>
+            <div className="text-center">{exerciseDef?.type === 'timed' ? 'Duração' : exerciseDef?.type === 'cardio' ? 'Tempo' : 'Reps'}</div>
+            <div className="text-center">{exerciseDef?.type === 'timed' ? '' : exerciseDef?.type === 'cardio' ? 'Dist' : 'Carga'}</div>
             <div className="w-6"></div>
           </div>
           
@@ -2112,11 +2112,19 @@ function ActiveWorkoutView({ plan, availableExercises, weightIncrement, onFinish
               >
                 <div className="w-8 text-center font-mono font-bold">{idx + 1}</div>
                 <div className="text-center font-mono text-lg">
-                  {isCompleted ? completedData.reps : plannedSet.reps}
+                  {isCompleted
+                    ? (exerciseDef?.type === 'timed' || exerciseDef?.type === 'cardio' ? completedData.duration : completedData.reps)
+                    : (exerciseDef?.type === 'timed' || exerciseDef?.type === 'cardio' ? plannedSet.duration : plannedSet.reps)}
+                  {exerciseDef?.type === 'timed' && <span className="text-xs ml-1 opacity-50">seg</span>}
+                  {exerciseDef?.type === 'cardio' && <span className="text-xs ml-1 opacity-50">min</span>}
                 </div>
                 <div className="text-center font-mono text-lg">
-                  {isCompleted ? completedData.weight : plannedSet.weight}
-                  <span className="text-xs ml-1 opacity-50">kg</span>
+                  {exerciseDef?.type === 'timed' ? null : isCompleted
+                    ? (exerciseDef?.type === 'cardio' ? completedData.distance : completedData.weight)
+                    : (exerciseDef?.type === 'cardio' ? plannedSet.distance : plannedSet.weight)}
+                  {exerciseDef?.type !== 'timed' && (
+                    <span className="text-xs ml-1 opacity-50">{exerciseDef?.type === 'cardio' ? 'km' : 'kg'}</span>
+                  )}
                 </div>
                 <div className="w-6 flex justify-center">
                   {isCompleted && <CheckCircle2 size={18} className="text-brand-500" />}
