@@ -2550,63 +2550,33 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory }: { 
                       exit={{ height: 0, opacity: 0 }}
                       className="overflow-hidden border-t border-zinc-800/50 bg-zinc-950/30"
                     >
-                      <div className="p-4">
-                        {exType === 'weighted' && history.length > 1 && (
-                          <div className="mb-4">
-                            <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider mb-2">Carga Máxima (kg)</div>
-                            <ResponsiveContainer width="100%" height={80}>
-                              <LineChart data={[...history].reverse().map(h => ({
-                                date: h.date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-                                carga: Math.max(...h.sets.map(s => s.weight || 0))
-                              }))}>
-                                <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#71717a' }} tickLine={false} axisLine={false} />
-                                <YAxis hide domain={['auto', 'auto']} />
-                                <Tooltip
-                                  contentStyle={{ background: '#18181b', border: '1px solid #27272a', borderRadius: 8, fontSize: 11 }}
-                                  labelStyle={{ color: '#a1a1aa' }}
-                                  formatter={(val: any) => [`${val}kg`, 'Carga']}
-                                />
-                                <Line type="monotone" dataKey="carga" stroke="#FFB200" strokeWidth={2} dot={{ fill: '#FFB200', r: 3 }} activeDot={{ r: 5 }} />
-                              </LineChart>
-                            </ResponsiveContainer>
+                      <div className="p-4 space-y-4">
+                        {history.slice(0, 8).map((entry, idx) => (
+                          <div key={idx} className="border-b border-zinc-800/30 pb-3 last:border-0 last:pb-0">
+                            <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider mb-2">
+                              {entry.date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                            </div>
+                            <div className="space-y-1">
+                              {entry.sets.map((set, sIdx) => (
+                                <div key={sIdx} className="flex items-center gap-2 text-sm font-mono">
+                                  <span className="text-zinc-600 w-4">{sIdx + 1}.</span>
+                                  {exType === 'weighted' && (
+                                    <span className="text-zinc-200">{set.weight ?? 0}<span className="text-zinc-500 text-xs">kg</span> × {set.reps ?? 0}<span className="text-zinc-500 text-xs"> reps</span></span>
+                                  )}
+                                  {exType === 'reps_only' && (
+                                    <span className="text-zinc-200">{set.reps ?? 0}<span className="text-zinc-500 text-xs"> reps</span></span>
+                                  )}
+                                  {exType === 'timed' && (
+                                    <span className="text-zinc-200">{set.duration ?? 0}<span className="text-zinc-500 text-xs"> seg</span></span>
+                                  )}
+                                  {exType === 'cardio' && (
+                                    <span className="text-zinc-200">{set.duration ?? 0}<span className="text-zinc-500 text-xs"> min</span> · {set.distance ?? 0}<span className="text-zinc-500 text-xs"> km</span></span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                        )}
-                        <table className="w-full text-left text-xs font-mono">
-                          <thead>
-                            <tr className="text-zinc-500 border-b border-zinc-800/50">
-                              <th className="pb-2 font-normal">DATA</th>
-                              <th className="pb-2 font-normal text-center">{exType === 'timed' ? 'DURAÇÃO' : exType === 'cardio' ? 'TEMPO' : exType === 'reps_only' ? 'REPS' : 'CARGA'}</th>
-                              <th className="pb-2 font-normal text-center">{exType === 'weighted' ? 'REPS' : exType === 'cardio' ? 'DIST' : ''}</th>
-                              <th className="pb-2 font-normal text-right">VOL Δ</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-zinc-800/30">
-                            {history.slice(0, 5).map((entry, idx) => {
-                              const entryVolume = calculateVolume(entry.sets, exType);
-                              const prevEntry = history[idx + 1];
-                              const prevEntryVolume = prevEntry ? calculateVolume(prevEntry.sets, exType) : 0;
-                              const delta = prevEntry ? entryVolume - prevEntryVolume : 0;
-                              const col1 = (() => {
-                                if (exType === 'timed') return `${getMaxWeight(entry.sets, exType)}seg`;
-                                if (exType === 'cardio') return `${entry.sets.reduce((acc, s) => acc + (s.duration || 0), 0)}min`;
-                                if (exType === 'reps_only') return `${getMaxWeight(entry.sets, exType)}`;
-                                return `${getMaxWeight(entry.sets, exType)}kg`;
-                              })();
-                              const col2 = exType === 'weighted' ? entry.sets.reduce((acc, s) => acc + (s.reps || 0), 0) : exType === 'cardio' ? `${entry.sets.reduce((acc, s) => acc + (s.distance || 0), 0)}km` : '';
-
-                              return (
-                                <tr key={idx} className="text-zinc-300">
-                                  <td className="py-2">{entry.date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</td>
-                                  <td className="py-2 text-center">{col1}</td>
-                                  <td className="py-2 text-center">{col2}</td>
-                                  <td className={`py-2 text-right font-bold ${delta > 0 ? 'text-brand-500' : delta < 0 ? 'text-red-500' : 'text-zinc-600'}`}>
-                                    {prevEntry ? (delta > 0 ? `+${delta}` : delta) : '-'}
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
+                        ))}
                       </div>
                     </motion.div>
                   )}
