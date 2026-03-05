@@ -187,7 +187,7 @@ export const supabaseService = {
       .from('workout_plans')
       .update({
         name: plan.name,
-        days_of_week: plan.daysOfWeek.length > 0 ? plan.daysOfWeek : undefined
+        days_of_week: plan.daysOfWeek
       })
       .eq('id', plan.id);
 
