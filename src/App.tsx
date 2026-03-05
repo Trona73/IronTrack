@@ -2516,30 +2516,14 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory }: { 
                 <button 
                   onClick={() => setExpandedExerciseId(isExpanded ? null : exId)}
                   className="w-full px-4 py-4 flex items-center justify-between hover:bg-zinc-800/50 transition-colors"
-                >
-                  <div className="text-left">
+               >
+                  <div className="text-left flex-1 min-w-0">
                     <h3 className="font-bold text-zinc-200">{exerciseDef?.name || 'Ex. Desconhecido'}</h3>
-                    <div className="text-xs text-zinc-500 font-mono mt-1">
-                      {exType === 'timed' ? `Última: ${latestMaxWeight}seg` : exType === 'cardio' ? `Última: ${latestMaxWeight}km` : exType === 'reps_only' ? `Última: ${latestMaxWeight} reps` : `Última: ${latestMaxWeight}kg`}
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-4">
-                    {/* Delta Indicator */}
-                    <div className="flex flex-col items-end">
-                      <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-mono">VOL Δ</span>
-                      {previousSession ? (
-                        <div className={`font-mono font-bold text-sm flex items-center gap-1 ${volumeDelta > 0 ? 'text-brand-500' : volumeDelta < 0 ? 'text-red-500' : 'text-zinc-500'}`}>
-                          {volumeDelta > 0 ? <TrendingUp size={14} /> : volumeDelta < 0 ? <TrendingUp size={14} className="rotate-180" /> : null}
-                          {volumeDelta > 0 ? '+' : ''}{volumeDelta}
-                        </div>
-                      ) : (
-                        <span className="text-zinc-600 font-mono text-sm">-</span>
-                      )}
-                    </div>
-                    <ChevronRight size={20} className={`text-zinc-600 transition-transform duration-300 ${isExpanded ? 'rotate-90' : ''}`} />
-                  </div>
-                </button>
+                    <div className="mt-1">
+                      {exType === 'cardio' ? (() => {
+                        const totalDist = history.reduce((acc, h) => acc + h.sets.reduce((a, s) => a + (s.distance || 0), 0), 0);
+                        const totalTime = history.reduce((acc, h) => acc + h.sets.reduce((a, s) => a + (s.duration || 0), 0), 0);
+                        const speed = totalTime > 0 ? (totalDist / (totalTime / 60)) : 0;
 
                 {/* Expanded Details */}
                 <AnimatePresence>
