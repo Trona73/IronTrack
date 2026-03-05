@@ -2487,86 +2487,7 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory }: { 
         </div>
       </div>
 
-      {/* Macro Volume Chart */}
-      {muscleChartData.length > 0 && (
-        <section className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="font-bold text-lg flex items-center gap-2">
-              <Activity size={18} className="text-brand-500" />
-              Volume de Séries (Sets)
-            </h2>
-            {selectedMuscleGroup && (
-              <button 
-                onClick={() => setSelectedMuscleGroup(null)}
-                className="text-xs text-zinc-400 hover:text-white flex items-center gap-1 bg-zinc-800 px-2 py-1 rounded-full"
-              >
-                <X size={12} /> Limpar Filtro
-              </button>
-            )}
-          </div>
-          <div className="h-80 w-full overflow-x-auto" style={{ minHeight: '320px', position: 'relative' }}>
-            <div style={{ width: '100%', height: '100%', minWidth: '300px' }}>
-              <BarChart 
-                width={350}
-                height={320}
-                layout="vertical" 
-                data={muscleChartData} 
-                margin={{ top: 5, right: 40, left: 10, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" horizontal={false} />
-                <XAxis type="number" hide />
-                <YAxis 
-                  type="category" 
-                  dataKey="name" 
-                  stroke="#a1a1aa" 
-                  fontSize={12} 
-                  fontWeight={600}
-                  tickLine={false} 
-                  axisLine={false} 
-                  width={80}
-                  tick={({ x, y, payload }) => {
-                    const data = muscleChartData.find(d => d.name === payload.value);
-                    const equip = data?.topEquipment || '';
-                    let equipShort = '';
-                    if (equip.includes('Barra')) equipShort = 'Barra';
-                    else if (equip.includes('Halter')) equipShort = 'Halter';
-                    else if (equip.includes('Máquina')) equipShort = 'Máq.';
-                    else if (equip.includes('Cabo')) equipShort = 'Cabo';
-                    else if (equip.includes('Corporal')) equipShort = 'Corp.';
-                    
-                    return (
-                      <g transform={`translate(${x},${y})`}>
-                        <text x={-12} y={0} dy={-4} textAnchor="end" fill="#e4e4e7" fontSize={12} fontWeight={600}>
-                          {payload.value}
-                        </text>
-                        {equipShort && (
-                          <text x={-12} y={0} dy={8} textAnchor="end" fill="#71717a" fontSize={9} fontStyle="italic">
-                            {equipShort}
-                          </text>
-                        )}
-                      </g>
-                    );
-                  }}
-                />
-                <Bar dataKey="sets" radius={[0, 4, 4, 0]} barSize={24} onClick={(data) => setSelectedMuscleGroup(data.name === selectedMuscleGroup ? null : data.name)} style={{ cursor: 'pointer' }}>
-                  {muscleChartData.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={entry.sets < avgSets * 0.5 ? '#f59e0b' : (selectedMuscleGroup === entry.name ? '#FFB200' : '#3f3f46')} 
-                    />
-                  ))}
-                  <LabelList dataKey="sets" position="right" fill="#e4e4e7" fontSize={12} fontWeight="bold" formatter={(val: number) => `${val}`} />
-                </Bar>
-              </BarChart>
-            </div>
-          </div>
-          <div className="mt-2 flex items-center justify-center gap-4 text-[10px] text-zinc-500">
-            <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-zinc-700"></div>Normal</div>
-            <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-amber-500"></div>Atenção (&lt;50% média)</div>
-            <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-brand-500"></div>Selecionado</div>
-          </div>
-        </section>
-      )}
+      
 
       {exercisesWithHistory.length === 0 ? (
          <div className="text-center py-10 text-zinc-500 italic">
@@ -2630,6 +2551,26 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory }: { 
                       className="overflow-hidden border-t border-zinc-800/50 bg-zinc-950/30"
                     >
                       <div className="p-4">
+                        {exType === 'weighted' && history.length > 1 && (
+                          <div className="mb-4">
+                            <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider mb-2">Carga Máxima (kg)</div>
+                            <ResponsiveContainer width="100%" height={80}>
+                              <LineChart data={[...history].reverse().map(h => ({
+                                date: h.date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+                                carga: Math.max(...h.sets.map(s => s.weight || 0))
+                              }))}>
+                                <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#71717a' }} tickLine={false} axisLine={false} />
+                                <YAxis hide domain={['auto', 'auto']} />
+                                <Tooltip
+                                  contentStyle={{ background: '#18181b', border: '1px solid #27272a', borderRadius: 8, fontSize: 11 }}
+                                  labelStyle={{ color: '#a1a1aa' }}
+                                  formatter={(val: any) => [`${val}kg`, 'Carga']}
+                                />
+                                <Line type="monotone" dataKey="carga" stroke="#FFB200" strokeWidth={2} dot={{ fill: '#FFB200', r: 3 }} activeDot={{ r: 5 }} />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+                        )}
                         <table className="w-full text-left text-xs font-mono">
                           <thead>
                             <tr className="text-zinc-500 border-b border-zinc-800/50">
