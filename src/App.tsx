@@ -2090,10 +2090,12 @@ function ActiveWorkoutView({ plan, availableExercises, weightIncrement, onFinish
 
         {/* Sets History */}
         <div className="space-y-2 mb-8 flex-1 overflow-y-auto">
-          <div className="grid grid-cols-[auto_1fr_1fr_auto] gap-4 text-xs font-mono text-zinc-500 px-4 mb-2">
+          <div className={`grid ${exerciseDef?.type === 'reps_only' || exerciseDef?.type === 'timed' ? 'grid-cols-[auto_1fr_auto]' : 'grid-cols-[auto_1fr_1fr_auto]'} gap-4 text-xs font-mono text-zinc-500 px-4 mb-2`}>
             <div className="w-8">Série</div>
             <div className="text-center">{exerciseDef?.type === 'timed' ? 'Duração' : exerciseDef?.type === 'cardio' ? 'Tempo' : 'Reps'}</div>
-            <div className="text-center">{exerciseDef?.type === 'timed' || exerciseDef?.type === 'reps_only' ? '' : exerciseDef?.type === 'cardio' ? 'Dist' : 'Carga'}</div>
+            {exerciseDef?.type !== 'reps_only' && exerciseDef?.type !== 'timed' && (
+              <div className="text-center">{exerciseDef?.type === 'cardio' ? 'Dist' : 'Carga'}</div>
+            )}
             <div className="w-6"></div>
           </div>
           
@@ -2105,7 +2107,7 @@ function ActiveWorkoutView({ plan, availableExercises, weightIncrement, onFinish
             return (
               <div 
                 key={idx} 
-                className={`grid grid-cols-[auto_1fr_1fr_auto] gap-4 items-center p-3 rounded-xl border transition-colors ${
+                className={`grid ${exerciseDef?.type === 'reps_only' || exerciseDef?.type === 'timed' ? 'grid-cols-[auto_1fr_auto]' : 'grid-cols-[auto_1fr_1fr_auto]'} gap-4 items-center p-3 rounded-xl border transition-colors ${
                   isCompleted ? 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500' : 
                   isCurrent ? 'bg-zinc-900 border-brand-500/50 shadow-[0_0_15px_rgba(255,178,0,0.1)]' : 
                   'bg-zinc-900/30 border-zinc-800/30 text-zinc-600'
@@ -2119,14 +2121,14 @@ function ActiveWorkoutView({ plan, availableExercises, weightIncrement, onFinish
                   {exerciseDef?.type === 'timed' && <span className="text-xs ml-1 opacity-50">seg</span>}
                   {exerciseDef?.type === 'cardio' && <span className="text-xs ml-1 opacity-50">min</span>}
                 </div>
-                <div className="text-center font-mono text-lg">
-                  {exerciseDef?.type === 'timed' || exerciseDef?.type === 'reps_only' ? null : isCompleted
-                    ? (exerciseDef?.type === 'cardio' ? completedData.distance : completedData.weight)
-                    : (exerciseDef?.type === 'cardio' ? plannedSet.distance : plannedSet.weight)}
-                  {exerciseDef?.type !== 'timed' && exerciseDef?.type !== 'reps_only' && (
+                {exerciseDef?.type !== 'reps_only' && exerciseDef?.type !== 'timed' && (
+                  <div className="text-center font-mono text-lg">
+                    {isCompleted
+                      ? (exerciseDef?.type === 'cardio' ? completedData.distance : completedData.weight)
+                      : (exerciseDef?.type === 'cardio' ? plannedSet.distance : plannedSet.weight)}
                     <span className="text-xs ml-1 opacity-50">{exerciseDef?.type === 'cardio' ? 'km' : 'kg'}</span>
-                  )}
-                </div>
+                  </div>
+                )}
                 <div className="w-6 flex justify-center">
                   {isCompleted && <CheckCircle2 size={18} className="text-brand-500" />}
                 </div>
