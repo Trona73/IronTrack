@@ -2092,7 +2092,7 @@ function ActiveWorkoutView({ plan, availableExercises, weightIncrement, onFinish
           <div className="grid grid-cols-[auto_1fr_1fr_auto] gap-4 text-xs font-mono text-zinc-500 px-4 mb-2">
             <div className="w-8">Série</div>
             <div className="text-center">{exerciseDef?.type === 'timed' ? 'Duração' : exerciseDef?.type === 'cardio' ? 'Tempo' : 'Reps'}</div>
-            <div className="text-center">{exerciseDef?.type === 'timed' ? '' : exerciseDef?.type === 'cardio' ? 'Dist' : 'Carga'}</div>
+            <div className="text-center">{exerciseDef?.type === 'timed' || exerciseDef?.type === 'reps_only' ? '' : exerciseDef?.type === 'cardio' ? 'Dist' : 'Carga'}</div>
             <div className="w-6"></div>
           </div>
           
