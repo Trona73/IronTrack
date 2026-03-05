@@ -468,6 +468,7 @@ const resumeWorkout = () => {
     setActivePlan(null);
     setCurrentView('dashboard');
     localStorage.removeItem('iron_active_workout');
+    localStorage.removeItem('iron_active_workout_state');
 
     if (supabaseSession) {
       try {
