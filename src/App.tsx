@@ -2119,10 +2119,10 @@ function ActiveWorkoutView({ plan, availableExercises, weightIncrement, onFinish
                   {exerciseDef?.type === 'cardio' && <span className="text-xs ml-1 opacity-50">min</span>}
                 </div>
                 <div className="text-center font-mono text-lg">
-                  {exerciseDef?.type === 'timed' ? null : isCompleted
+                  {exerciseDef?.type === 'timed' || exerciseDef?.type === 'reps_only' ? null : isCompleted
                     ? (exerciseDef?.type === 'cardio' ? completedData.distance : completedData.weight)
                     : (exerciseDef?.type === 'cardio' ? plannedSet.distance : plannedSet.weight)}
-                  {exerciseDef?.type !== 'timed' && (
+                  {exerciseDef?.type !== 'timed' && exerciseDef?.type !== 'reps_only' && (
                     <span className="text-xs ml-1 opacity-50">{exerciseDef?.type === 'cardio' ? 'km' : 'kg'}</span>
                   )}
                 </div>
