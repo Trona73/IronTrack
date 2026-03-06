@@ -2885,7 +2885,7 @@ function ExercisesView({
                 <div>
                   <div className="font-semibold">{ex.name}</div>
                   <div className="flex gap-1 mt-1.5">
-                    <span className="bg-zinc-800 text-zinc-400 font-mono text-[10px] px-2 py-0.5 rounded-full">{ex.muscleGroup}</span>
+                    <span className="bg-zinc-800 text-zinc-400 font-mono text-[10px] px-2 py-0.5 rounded-full">{ex.muscleGroup.includes(' - ') ? ex.muscleGroup.split(' - ')[1] : ex.muscleGroup}</span>
                     <span className="bg-zinc-800 text-zinc-400 font-mono text-[10px] px-2 py-0.5 rounded-full">{ex.equipment}</span>
                   </div>
                 </div>
