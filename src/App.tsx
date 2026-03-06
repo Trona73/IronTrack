@@ -3144,6 +3144,19 @@ function SettingsView({ onBack, onOpenManual, profile, onUpdateProfile }: { onBa
             </p>
           </div>
         </div>
+      <button
+          onClick={onOpenManual}
+          className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex items-center justify-between hover:border-brand-500/30 transition-colors group"
+        >
+          <div className="flex items-center gap-3">
+            <BookOpen size={20} className="text-brand-500" />
+            <div className="text-left">
+              <div className="font-semibold text-zinc-200">Manual do App</div>
+              <div className="text-xs text-zinc-500 mt-0.5">Fluxo, tipos de exercício e métricas</div>
+            </div>
+          </div>
+          <ChevronRight size={18} className="text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+        </button>
       </div>
     </motion.div>
   );
