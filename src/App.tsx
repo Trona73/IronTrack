@@ -2826,41 +2826,27 @@ function ExercisesView({
         </div>
       ) : (
         <>
-          {/* Filters */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-mono text-zinc-500 mb-1 uppercase tracking-wider">Músculo</label>
-              <select 
-                value={filterMuscle}
-                onChange={e => setFilterMuscle(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-sm focus:outline-none focus:border-brand-500 transition-colors appearance-none"
+          {/* Filters — Nível 1: Grupo muscular */}
+          <div className="flex gap-2 flex-wrap">
+            {['Todos', ...muscleGroups].map(g => (
+              <button
+                key={g}
+                onClick={() => { setFilterMuscle(g === 'Todos' ? 'Todos' : g); setFilterEquipment('Todos'); }}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
+                  filterMuscle === g || (g === 'Todos' && filterMuscle === 'Todos')
+                    ? 'border-brand-500 bg-brand-500/10 text-brand-400'
+                    : 'border-zinc-800 bg-zinc-900 text-zinc-500 hover:text-zinc-300'
+                }`}
               >
-                <option value="Todos">Todos</option>
-                {[...muscleGroups].sort((a, b) => a.localeCompare(b)).map(m => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-mono text-zinc-500 mb-1 uppercase tracking-wider">Equipamento</label>
-              <select 
-                value={filterEquipment}
-                onChange={e => setFilterEquipment(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-sm focus:outline-none focus:border-brand-500 transition-colors appearance-none"
-              >
-                <option value="Todos">Todos</option>
-                {[...equipmentList].sort((a, b) => a.localeCompare(b)).map(e => (
-                  <option key={e} value={e}>{e}</option>
-                ))}
-              </select>
-            </div>
+                {g}
+              </button>
+            ))}
           </div>
 
           <div className="space-y-3">
             {exercises
-              .filter(ex => (filterMuscle === 'Todos' || ex.muscleGroup === filterMuscle) && 
-                            (filterEquipment === 'Todos' || ex.equipment === filterEquipment))
-              .sort((a, b) => a.name.localeCompare(b.name))
+              .filter(ex => filterMuscle === 'Todos' || ex.muscleGroup === filterMuscle)
+              .sort((a, b) => (a.muscleGroup + a.name).localeCompare(b.muscleGroup + b.name))
               .map(ex => (
             <div 
                 key={ex.id}
@@ -2868,7 +2854,10 @@ function ExercisesView({
               >
                 <div>
                   <div className="font-semibold">{ex.name}</div>
-                  <div className="text-xs text-zinc-500 font-mono mt-1">{ex.muscleGroup} • {ex.equipment}</div>
+                  <div className="flex gap-1 mt-1.5">
+                    <span className="bg-zinc-800 text-zinc-400 font-mono text-[10px] px-2 py-0.5 rounded-full">{ex.muscleGroup}</span>
+                    <span className="bg-zinc-800 text-zinc-400 font-mono text-[10px] px-2 py-0.5 rounded-full">{ex.equipment}</span>
+                  </div>
                 </div>
                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button 
