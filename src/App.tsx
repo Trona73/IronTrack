@@ -2826,26 +2826,56 @@ function ExercisesView({
         </div>
       ) : (
         <>
-          {/* Filters — Nível 1: Grupo muscular */}
-          <div className="flex gap-2 flex-wrap">
-            {['Todos', ...muscleGroups].map(g => (
-              <button
-                key={g}
-                onClick={() => { setFilterMuscle(g === 'Todos' ? 'Todos' : g); setFilterEquipment('Todos'); }}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
-                  filterMuscle === g || (g === 'Todos' && filterMuscle === 'Todos')
-                    ? 'border-brand-500 bg-brand-500/10 text-brand-400'
-                    : 'border-zinc-800 bg-zinc-900 text-zinc-500 hover:text-zinc-300'
-                }`}
-              >
-                {g}
-              </button>
-            ))}
-          </div>
+          {/* Filters — Nível 1 + Nível 2 */}
+          {(() => {
+            const mainGroups = ['Todos', ...Array.from(new Set(muscleGroups.map(g => g.includes(' - ') ? g.split(' - ')[0] : g))).sort()];
+            const selectedMain = filterMuscle === 'Todos' ? null : (filterMuscle.includes(' - ') ? filterMuscle.split(' - ')[0] : filterMuscle);
+            const subs = selectedMain ? muscleGroups.filter(g => g.startsWith(selectedMain + ' - ')).sort() : [];
+            return (
+              <>
+                <div className="flex gap-2 flex-wrap">
+                  {mainGroups.map(g => (
+                    <button
+                      key={g}
+                      onClick={() => { setFilterMuscle(g === 'Todos' ? 'Todos' : g); }}
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
+                        (g === 'Todos' && filterMuscle === 'Todos') || selectedMain === g
+                          ? 'border-brand-500 bg-brand-500/10 text-brand-400'
+                          : 'border-zinc-800 bg-zinc-900 text-zinc-500 hover:text-zinc-300'
+                      }`}
+                    >
+                      {g}
+                    </button>
+                  ))}
+                </div>
+                {subs.length > 0 && (
+                  <div className="flex gap-2 flex-wrap pl-2 border-l-2 border-brand-500/20 mt-1">
+                    {subs.map(s => (
+                      <button
+                        key={s}
+                        onClick={() => setFilterMuscle(filterMuscle === s ? selectedMain! : s)}
+                        className={`px-3 py-1 rounded-full text-[11px] font-medium border transition-all ${
+                          filterMuscle === s
+                            ? 'border-brand-500 bg-brand-500/10 text-brand-400'
+                            : 'border-zinc-800 bg-transparent text-zinc-500 hover:text-zinc-300'
+                        }`}
+                      >
+                        {s.split(' - ')[1]}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            );
+          })()}
 
           <div className="space-y-3">
             {exercises
-              .filter(ex => filterMuscle === 'Todos' || ex.muscleGroup === filterMuscle)
+              .filter(ex => {
+                if (filterMuscle === 'Todos') return true;
+                if (filterMuscle.includes(' - ')) return ex.muscleGroup === filterMuscle;
+                return ex.muscleGroup === filterMuscle || ex.muscleGroup.startsWith(filterMuscle + ' - ');
+              })
               .sort((a, b) => (a.muscleGroup + a.name).localeCompare(b.muscleGroup + b.name))
               .map(ex => (
             <div 
