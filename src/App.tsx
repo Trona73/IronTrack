@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User, TrendingUp, RotateCcw, BarChart2, Settings, GripVertical, Check } from 'lucide-react';
-import { motion, AnimatePresence, Reorder } from 'motion/react';
+import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User, TrendingUp, RotateCcw, BarChart2, Settings, GripVertical, Check, Zap, BookOpen } from 'lucide-react';import { motion, AnimatePresence, Reorder } from 'motion/react';
 import { LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 import { WorkoutPlan, WorkoutSession, Exercise, PlannedExercise, CompletedSet, CompletedExercise, UserProfile, Equipment, MuscleGroup } from './types';
 import { EXERCISES, MOCK_PLANS } from './data';
@@ -10,8 +9,7 @@ import { supabaseService } from './services/supabaseService';
 const DEFAULT_MUSCLE_GROUPS = ['Peito', 'Costas', 'Pernas', 'Ombros', 'Braços', 'Core', 'Cardio'];
 const DEFAULT_EQUIPMENT = ['Halteres', 'Barra', 'Máquina', 'Peso Corporal', 'Cabos', 'Kettlebell'];
 
-type View = 'dashboard' | 'builder' | 'active' | 'history' | 'profile' | 'exercises' | 'weekly-schedule' | 'settings';
-
+type View = 'dashboard' | 'builder' | 'active' | 'history' | 'profile' | 'exercises' | 'weekly-schedule' | 'settings' | 'manual';
 export default function App() {
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [plans, setPlans] = useState<WorkoutPlan[]>(MOCK_PLANS);
@@ -604,8 +602,15 @@ const resumeWorkout = () => {
                 <SettingsView 
                   key="settings"
                   onBack={() => setCurrentView('dashboard')}
+                  onOpenManual={() => setCurrentView('manual')}
                   profile={userProfile}
                   onUpdateProfile={setUserProfile}
+                />
+              )}
+              {currentView === 'manual' && (
+                <ManualView
+                  key="manual"
+                  onBack={() => setCurrentView('settings')}
                 />
               )}
               {currentView === 'weekly-schedule' && dayToEdit !== null && (
@@ -2969,10 +2974,118 @@ function ExercisesView({
     </motion.div>
   );
 }
+const manualSections = [
+  {
+    icon: <Zap size={18} className="text-brand-500" />,
+    title: "Fluxo do App",
+    items: [
+      { term: "1. Crie seus exercícios", desc: "Em Exercícios, cadastre cada movimento com grupo muscular, equipamento e tipo." },
+      { term: "2. Monte um treino", desc: "Em Criar, agrupe exercícios num treino nomeado. Defina séries e valores padrão." },
+      { term: "3. Programe a semana", desc: "Na tela Início, atribua treinos a dias da Semana 01 e 02. O ciclo repete automaticamente." },
+      { term: "4. Execute", desc: "Toque em ▶ para iniciar. Confirme ou ajuste cada série. O app registra o que foi feito." },
+      { term: "5. Acompanhe", desc: "Em Progresso, veja o histórico completo — série a série, sessão a sessão." },
+    ]
+  },
+  {
+    icon: <Dumbbell size={18} className="text-brand-500" />,
+    title: "Tipos de Exercício",
+    items: [
+      { term: "Carga + Reps", desc: "Exercícios com peso externo. Registra kg e repetições por série. Ex: Supino, Agachamento." },
+      { term: "Só Reps", desc: "Sem carga. Registra repetições por série. Ex: Flexão, Abdominais." },
+      { term: "Tempo", desc: "Exercícios isométricos. Registra segundos por série. Ex: Prancha." },
+      { term: "Cardio", desc: "Registra tempo (min) e distância (km). Ex: Caminhada, Corrida, Bicicleta." },
+    ]
+  },
+  {
+    icon: <BarChart2 size={18} className="text-brand-500" />,
+    title: "Tags do Histórico",
+    items: [
+      { term: "90kg", desc: "Carga máxima da última sessão (Carga + Reps)." },
+      { term: "120 reps", desc: "Total de repetições de todas as séries da última sessão (Só Reps)." },
+      { term: "180seg", desc: "Duração total de todas as séries da última sessão (Tempo)." },
+      { term: "12.5km", desc: "Distância total acumulada desde o início (Cardio)." },
+      { term: "320min", desc: "Tempo total acumulado desde o início (Cardio)." },
+      { term: "5.2km/h", desc: "Velocidade média desde o início — distância ÷ tempo (Cardio)." },
+      { term: "11:32min/km", desc: "Pace médio desde o início — tempo ÷ distância. Quanto menor, mais rápido (Cardio)." },
+    ]
+  },
+  {
+    icon: <Calendar size={18} className="text-brand-500" />,
+    title: "Semana 01 e 02",
+    items: [
+      { term: "Ciclo de 14 dias", desc: "Dois blocos semanais independentes. Útil para periodização A/B." },
+      { term: "Data de início", desc: "Defina o início da Semana 01 tocando no ícone de calendário." },
+      { term: "Treino Finalizado", desc: "Treino programado concluído naquele dia." },
+      { term: "Treino não realizado", desc: "O dia passou sem o treino ser executado." },
+    ]
+  },
+];
+
+function ManualView({ onBack }: { onBack: () => void, key?: React.Key }) {
+  const [openSection, setOpenSection] = useState<number | null>(null);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      className="p-6 pt-12 space-y-6 pb-32"
+    >
+      <header className="flex items-center gap-4">
+        <button
+          onClick={onBack}
+          className="p-2 bg-zinc-800 rounded-full text-zinc-300 hover:text-white hover:bg-zinc-700 transition-colors"
+        >
+          <ChevronRight className="rotate-180" size={20} />
+        </button>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight mb-1">Manual</h1>
+          <p className="text-zinc-400">Guia rápido de uso e referência.</p>
+        </div>
+      </header>
+
+      <div className="space-y-3">
+        {manualSections.map((sec, idx) => (
+          <div key={idx} className={`bg-zinc-900 border rounded-2xl overflow-hidden transition-colors ${openSection === idx ? 'border-brand-500/30' : 'border-zinc-800'}`}>
+            <button
+              onClick={() => setOpenSection(openSection === idx ? null : idx)}
+              className="w-full px-5 py-4 flex items-center justify-between hover:bg-zinc-800/50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                {sec.icon}
+                <span className="font-bold text-zinc-200">{sec.title}</span>
+              </div>
+              <ChevronRight size={18} className={`text-zinc-600 transition-transform duration-300 ${openSection === idx ? 'rotate-90' : ''}`} />
+            </button>
+
+            <AnimatePresence>
+              {openSection === idx && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="px-5 pb-5 space-y-3 border-t border-zinc-800/50">
+                    {sec.items.map((item, i) => (
+                      <div key={i} className="bg-zinc-950 border border-zinc-800/50 rounded-xl p-3 mt-3">
+                        <span className="inline-block bg-brand-500/10 border border-brand-500/20 text-brand-400 font-mono text-[11px] font-bold px-2 py-0.5 rounded-md mb-2">{item.term}</span>
+                        <p className="text-xs text-zinc-400 leading-relaxed">{item.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
 
 // --- Settings View ---
-function SettingsView({ onBack, profile, onUpdateProfile }: { onBack: () => void, profile: UserProfile, onUpdateProfile: (p: UserProfile) => void, key?: React.Key }) {
-  const days = [
+function SettingsView({ onBack, onOpenManual, profile, onUpdateProfile }: { onBack: () => void, onOpenManual: () => void, profile: UserProfile, onUpdateProfile: (p: UserProfile) => void, key?: React.Key }) {  const days = [
     { value: 1, label: 'Segunda-feira' },
     { value: 2, label: 'Terça-feira' },
     { value: 3, label: 'Quarta-feira' },
@@ -3233,9 +3346,23 @@ function ProfileView({ profile, onSave, onLogout }: { profile: UserProfile, onSa
           <RotateCcw size={20} />
           Sair da Conta
         </button>
+      <button
+          onClick={onOpenManual}
+          className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex items-center justify-between hover:border-brand-500/30 transition-colors group"
+        >
+          <div className="flex items-center gap-3">
+            <BookOpen size={20} className="text-brand-500" />
+            <div className="text-left">
+              <div className="font-semibold text-zinc-200">Manual do App</div>
+              <div className="text-xs text-zinc-500 mt-0.5">Fluxo, tipos de exercício e métricas</div>
+            </div>
+          </div>
+          <ChevronRight size={18} className="text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+        </button>
       </div>
     </motion.div>
   );
+}
 }
 // --- Auth View ---
 function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (email: string, pass: string) => Promise<boolean>, onCreateAccount: (profile: UserProfile) => Promise<boolean>, existingProfile?: UserProfile, key?: React.Key }) {
