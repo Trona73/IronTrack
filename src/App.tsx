@@ -6,6 +6,7 @@ import { EXERCISES, MOCK_PLANS } from './data';
 import { supabase } from './lib/supabase';
 import { supabaseService } from './services/supabaseService';
 
+const ADMIN_USER_ID = 'eeca6821-6213-47e7-9f8d-3e3ef8f3d6f8';
 const DEFAULT_MUSCLE_GROUPS = ['Peito', 'Costas', 'Pernas', 'Ombros', 'Braços', 'Core', 'Cardio'];
 const DEFAULT_EQUIPMENT = ['Halteres', 'Barra', 'Máquina', 'Peso Corporal', 'Cabos', 'Kettlebell'];
 
@@ -275,7 +276,20 @@ useEffect(() => {
       try {
         await supabaseService.updateExercise(exercise);
       } catch (e) {
-        handleAuthError(e);
+        // Se não é admin e falhou, cria cópia pessoal
+        if (supabaseSession.user.id !== ADMIN_USER_ID) {
+          try {
+            const realId = await supabaseService.ensureExercise(
+              { ...exercise, id: '' },
+              supabaseSession.user.id
+            );
+            setExercises(prev => prev.map(e => e.id === exercise.id ? { ...exercise, id: realId } : e));
+          } catch (e2) {
+            handleAuthError(e2);
+          }
+        } else {
+          handleAuthError(e);
+        }
       }
     }
   };
@@ -298,7 +312,11 @@ useEffect(() => {
           // If not deleted from DB (e.g. system exercise or RLS), revert
           console.warn('Exercise not deleted from DB (likely system default or permission denied)');
           setExercises(prev => [...prev, exerciseToDelete]);
-          alert('Não é possível excluir este exercício (pode ser um exercício padrão do sistema).');
+          if (supabaseSession.user.id !== ADMIN_USER_ID) {
+            alert('Exercícios da biblioteca base não podem ser excluídos.');
+          } else {
+            alert('Erro ao excluir exercício. Tente novamente.');
+          }
         }
       } catch (e: any) {
         console.error('Failed to delete exercise:', e);
