@@ -21,7 +21,7 @@ export const supabaseService = {
     }));
   },
 
-  async ensureExercise(exercise: Exercise): Promise<string> {
+  async ensureExercise(exercise: Exercise, userId?: string): Promise<string> {
     const { data: existing } = await supabase
       .from('exercises')
       .select('id')
@@ -38,7 +38,8 @@ export const supabaseService = {
         muscle_group: exercise.muscleGroup,
         description: exercise.description,
         image_url: exercise.imageUrl,
-        video_url: exercise.videoUrl
+        video_url: exercise.videoUrl,
+        user_id: userId || null
       })
       .select('id')
       .single();

@@ -256,7 +256,7 @@ useEffect(() => {
 
     if (supabaseSession) {
       try {
-        const realId = await supabaseService.ensureExercise(exercise);
+        const realId = await supabaseService.ensureExercise(exercise, supabaseSession.user.id);
         // Update with real ID
         setExercises(prev => prev.map(e => e.id === exercise.id ? { ...e, id: realId } : e));
       } catch (e) {
@@ -348,7 +348,7 @@ useEffect(() => {
           }
 
           // Get or create real UUID from Supabase
-          const realId = await supabaseService.ensureExercise(exerciseDetails);
+          const realId = await supabaseService.ensureExercise(exerciseDetails, supabaseSession.user.id);
           
           // Update local exercises list with the new ID to prevent future lookups
           setExercises(prev => prev.map(e => e.id === pe.exerciseId ? { ...e, id: realId } : e));
