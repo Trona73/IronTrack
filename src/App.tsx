@@ -2538,12 +2538,22 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory }: { 
                           </div>
                         );
                       })() : (
-                        <div className="text-xs text-zinc-500 font-mono">
-                          {exType === 'timed'
-                            ? `Total: ${history[0].sets.reduce((acc, s) => acc + (s.duration || 0), 0)}seg`
-                            : exType === 'reps_only'
-                            ? `Última: ${latestMaxWeight} reps`
-                            : `Última: ${latestMaxWeight}kg`}
+                        <div className="flex flex-wrap gap-1">
+                          {exType === 'timed' && (
+                            <span className="bg-zinc-800 text-zinc-400 font-mono text-[10px] px-2 py-0.5 rounded-full">
+                              {history[0].sets.reduce((acc, s) => acc + (s.duration || 0), 0)}seg
+                            </span>
+                          )}
+                          {exType === 'reps_only' && (
+                            <span className="bg-zinc-800 text-zinc-400 font-mono text-[10px] px-2 py-0.5 rounded-full">
+                              {history[0].sets.reduce((acc, s) => acc + (s.reps || 0), 0)} reps
+                            </span>
+                          )}
+                          {exType === 'weighted' && (
+                            <span className="bg-zinc-800 text-zinc-400 font-mono text-[10px] px-2 py-0.5 rounded-full">
+                              {latestMaxWeight}kg
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>
