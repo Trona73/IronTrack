@@ -2851,9 +2851,10 @@ function ExercisesView({
         <>
           {/* Filters — Nível 1 + Nível 2 */}
           {(() => {
-            const mainGroups = ['Todos', ...Array.from(new Set(muscleGroups.map(g => g.includes(' - ') ? g.split(' - ')[0] : g))).sort()];
+            const allGroups = Array.from(new Set(exercises.map(e => e.muscleGroup))).sort();
+            const mainGroups = ['Todos', ...Array.from(new Set(allGroups.map(g => g.includes(' - ') ? g.split(' - ')[0] : g))).sort()];
             const selectedMain = filterMuscle === 'Todos' ? null : (filterMuscle.includes(' - ') ? filterMuscle.split(' - ')[0] : filterMuscle);
-            const subs = selectedMain ? muscleGroups.filter(g => g.startsWith(selectedMain + ' - ')).sort() : [];
+            const subs = selectedMain ? allGroups.filter(g => g.startsWith(selectedMain + ' - ')).sort() : [];
             return (
               <>
                 <div className="flex gap-2 flex-wrap">
