@@ -65,6 +65,7 @@ export interface UserProfile {
   trainingStartDay?: number; // 0 = Sunday, 1 = Monday, etc.
   weeklyTrainingGoal?: number; // 1-7 days per week
   photoUrl?: string;
+  weightIncrement?: number;
 }
 
 export interface WorkoutSession {

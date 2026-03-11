@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User, TrendingUp, RotateCcw, BarChart2, Settings, GripVertical, Check, Zap, BookOpen, MoreVertical } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'motion/react';
 import { LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
-import { WorkoutPlan, WorkoutSession, Exercise, PlannedExercise, CompletedSet, CompletedExercise, UserProfile, Equipment, MuscleGroup } from './types';
+import { WorkoutPlan, WorkoutSession, Exercise, PlannedExercise, PlannedSet, CompletedSet, CompletedExercise, UserProfile, Equipment, MuscleGroup } from './types';
 import { EXERCISES, MOCK_PLANS } from './data';
 import { supabase } from './lib/supabase';
 import { supabaseService } from './services/supabaseService';
@@ -1524,7 +1524,7 @@ function BuilderView({
     setShowExercisePicker(false);
   };
 
-  const updateSet = (exId: string, setIndex: number, field: 'reps' | 'weight', value: number) => {
+  const updateSet = (exId: string, setIndex: number, field: 'reps' | 'weight' | 'duration' | 'distance', value: number) => {
     setExercises(prev => prev.map(ex => {
       if (ex.id !== exId) return ex;
       const newSets = [...ex.sets];
@@ -3398,23 +3398,51 @@ function ProfileView({ profile, onSave, onLogout }: { profile: UserProfile, onSa
 // --- Auth View ---
 function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (email: string, pass: string) => Promise<boolean>, onCreateAccount: (profile: UserProfile) => Promise<boolean>, existingProfile?: UserProfile, key?: React.Key }) {
   const [isLoginMode, setIsLoginMode] = useState(true);
+  const [isResetMode, setIsResetMode] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
   // Clear fields when switching modes
   useEffect(() => {
     setError('');
+    setMessage('');
     setEmail('');
     setPassword('');
     setName('');
-  }, [isLoginMode]);
+  }, [isLoginMode, isResetMode]);
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setMessage('');
+    
+    if (!email) {
+      setError('Por favor, informe seu email.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin,
+      });
+      if (error) throw error;
+      setMessage('Email de recuperação enviado! Verifique sua caixa de entrada.');
+    } catch (err: any) {
+      setError(err.message || 'Erro ao enviar email de recuperação.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setMessage('');
     setLoading(true);
 
     try {
@@ -3445,7 +3473,7 @@ function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (ema
         });
         if (success) {
            setIsLoginMode(true);
-           setError('Conta criada com sucesso! Faça login para continuar.');
+           setMessage('Conta criada com sucesso! Faça login para continuar.');
            // Password cleared by useEffect dependency on isLoginMode
         }
       }
@@ -3477,75 +3505,135 @@ function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (ema
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-6">
           <div className="flex border-b border-zinc-800 pb-4">
             <button 
-              onClick={() => setIsLoginMode(true)}
-              className={`flex-1 pb-2 text-sm font-medium transition-colors ${isLoginMode ? 'text-brand-500 border-b-2 border-brand-500' : 'text-zinc-500'}`}
+              onClick={() => { setIsLoginMode(true); setIsResetMode(false); }}
+              className={`flex-1 pb-2 text-sm font-medium transition-colors ${isLoginMode && !isResetMode ? 'text-brand-500 border-b-2 border-brand-500' : 'text-zinc-500'}`}
             >
               Entrar
             </button>
             <button 
-              onClick={() => setIsLoginMode(false)}
-              className={`flex-1 pb-2 text-sm font-medium transition-colors ${!isLoginMode ? 'text-brand-500 border-b-2 border-brand-500' : 'text-zinc-500'}`}
+              onClick={() => { setIsLoginMode(false); setIsResetMode(false); }}
+              className={`flex-1 pb-2 text-sm font-medium transition-colors ${!isLoginMode && !isResetMode ? 'text-brand-500 border-b-2 border-brand-500' : 'text-zinc-500'}`}
             >
               Criar Conta
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
-            {!isLoginMode && (
+          {isResetMode ? (
+            <form onSubmit={handleResetPassword} className="space-y-4" autoComplete="off">
               <div>
-                <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Nome</label>
+                <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Email</label>
                 <input 
-                  type="text" 
-                  value={name}
-                  onChange={e => setName(e.target.value)}
+                  type="email" 
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors"
-                  placeholder="Seu nome"
+                  placeholder="seu@email.com"
                   autoComplete="off"
-                  name="signup_name"
+                  name="reset_email"
                 />
               </div>
-            )}
 
-            <div>
-              <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Email</label>
-              <input 
-                type="email" 
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors"
-                placeholder="seu@email.com"
-                autoComplete="off"
-                name={isLoginMode ? "login_email" : "signup_email"}
-              />
-            </div>
+              {error && (
+                <div className="text-red-500 text-sm text-center bg-[#18181b] p-2 rounded-lg border border-[#18181b]">
+                  {error}
+                </div>
+              )}
+              {message && (
+                <div className="text-brand-500 text-sm text-center bg-brand-500/10 p-2 rounded-lg border border-brand-500/20">
+                  {message}
+                </div>
+              )}
 
-            <div>
-              <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Senha</label>
-              <input 
-                type="password" 
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors"
-                placeholder="********"
-                autoComplete="new-password"
-                name={isLoginMode ? "login_password" : "signup_password"}
-              />
-            </div>
+              <button 
+                type="submit"
+                disabled={loading}
+                className="w-full py-4 bg-brand-500 text-zinc-950 hover:bg-brand-400 rounded-xl font-bold transition-colors shadow-lg shadow-brand-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Enviando...' : 'Enviar link de recuperação'}
+              </button>
 
-            {error && (
-              <div className="text-red-500 text-sm text-center bg-[#18181b] p-2 rounded-lg border border-[#18181b]">
-                {error}
+              <button
+                type="button"
+                onClick={() => setIsResetMode(false)}
+                className="w-full py-2 text-zinc-400 hover:text-white text-sm transition-colors"
+              >
+                Voltar para o login
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
+              {!isLoginMode && (
+                <div>
+                  <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Nome</label>
+                  <input 
+                    type="text" 
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors"
+                    placeholder="Seu nome"
+                    autoComplete="off"
+                    name="signup_name"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Email</label>
+                <input 
+                  type="email" 
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors"
+                  placeholder="seu@email.com"
+                  autoComplete="off"
+                  name={isLoginMode ? "login_email" : "signup_email"}
+                />
               </div>
-            )}
 
-            <button 
-              type="submit"
-              disabled={loading}
-              className="w-full py-4 bg-brand-500 text-zinc-950 hover:bg-brand-400 rounded-xl font-bold transition-colors shadow-lg shadow-brand-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Carregando...' : (isLoginMode ? 'Entrar' : 'Criar Conta')}
-            </button>
-          </form>
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-xs font-mono text-zinc-500 uppercase tracking-wider">Senha</label>
+                  {isLoginMode && (
+                    <button
+                      type="button"
+                      onClick={() => setIsResetMode(true)}
+                      className="text-xs text-brand-500 hover:text-brand-400 transition-colors"
+                    >
+                      Esqueceu a senha?
+                    </button>
+                  )}
+                </div>
+                <input 
+                  type="password" 
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors"
+                  placeholder="********"
+                  autoComplete="new-password"
+                  name={isLoginMode ? "login_password" : "signup_password"}
+                />
+              </div>
+
+              {error && (
+                <div className="text-red-500 text-sm text-center bg-[#18181b] p-2 rounded-lg border border-[#18181b]">
+                  {error}
+                </div>
+              )}
+              {message && (
+                <div className="text-brand-500 text-sm text-center bg-brand-500/10 p-2 rounded-lg border border-brand-500/20">
+                  {message}
+                </div>
+              )}
+
+              <button 
+                type="submit"
+                disabled={loading}
+                className="w-full py-4 bg-brand-500 text-zinc-950 hover:bg-brand-400 rounded-xl font-bold transition-colors shadow-lg shadow-brand-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Carregando...' : (isLoginMode ? 'Entrar' : 'Criar Conta')}
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </motion.div>
