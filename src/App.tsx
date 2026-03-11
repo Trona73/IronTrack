@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User, TrendingUp, RotateCcw, BarChart2, Settings, GripVertical, Check, Zap, BookOpen } from 'lucide-react';import { motion, AnimatePresence, Reorder } from 'motion/react';
+import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User, TrendingUp, RotateCcw, BarChart2, Settings, GripVertical, Check, Zap, BookOpen, MoreVertical } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 import { WorkoutPlan, WorkoutSession, Exercise, PlannedExercise, CompletedSet, CompletedExercise, UserProfile, Equipment, MuscleGroup } from './types';
 import { EXERCISES, MOCK_PLANS } from './data';
@@ -1493,6 +1493,7 @@ function BuilderView({
   
   // Filter State
   const [filterMuscle, setFilterMuscle] = useState<string>('Todos');
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [filterEquipment, setFilterEquipment] = useState<string>('Todos');
 
   // Get unique muscle groups and equipment from available exercises for filtering
@@ -2913,19 +2914,29 @@ function ExercisesView({
                     <span className="bg-zinc-800 text-zinc-400 font-mono text-[10px] px-2 py-0.5 rounded-full">{ex.equipment}</span>
                   </div>
                 </div>
-                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button 
-                    onClick={() => startEditing(ex)}
-                    className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-full transition-colors"
+                <div className="relative">
+                  <button
+                    onClick={() => setOpenMenuId(openMenuId === ex.id ? null : ex.id)}
+                    className="p-2 text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800 rounded-full transition-colors"
                   >
-                    <Pencil size={18} />
+                    <MoreVertical size={18} />
                   </button>
-                  <button 
-                    onClick={() => setExerciseToDelete(ex.id)}
-                    className="p-2 text-zinc-500 hover:text-red-400 hover:bg-zinc-800 rounded-full transition-colors"
-                  >
-                    <Trash2 size={18} />
-                  </button>
+                  {openMenuId === ex.id && (
+                    <div className="absolute right-0 top-8 z-10 bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl overflow-hidden w-36">
+                      <button
+                        onClick={() => { startEditing(ex); setOpenMenuId(null); }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
+                      >
+                        <Pencil size={15} /> Editar
+                      </button>
+                      <button
+                        onClick={() => { setExerciseToDelete(ex.id); setOpenMenuId(null); }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-400 hover:bg-zinc-800 transition-colors"
+                      >
+                        <Trash2 size={15} /> Excluir
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
