@@ -33,6 +33,7 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isSupabaseLoaded, setIsSupabaseLoaded] = useState(false);
   const [showAuth, setShowAuth] = useState(true); // Controls if AuthView is shown
+  const [showUpdatePassword, setShowUpdatePassword] = useState(false);
   const [supabaseSession, setSupabaseSession] = useState<any>(null);
 
   // Load from local storage and Supabase
@@ -96,6 +97,11 @@ export default function App() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSupabaseSession(session);
+      
+      if (_event === 'PASSWORD_RECOVERY') {
+        setShowUpdatePassword(true);
+      }
+
       if (session) {
         setIsAuthenticated(true);
         setShowAuth(false);
@@ -580,13 +586,33 @@ const resumeWorkout = () => {
     localStorage.removeItem('iron_active_workout');
   };
 
+  const handleUpdatePassword = async (password: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      setShowUpdatePassword(false);
+      alert('Senha atualizada com sucesso!');
+      return true;
+    } catch (e: any) {
+      console.error('Error updating password:', e);
+      alert('Erro ao atualizar senha: ' + e.message);
+      return false;
+    }
+  };
+
 
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 font-sans selection:bg-brand-500/30">
       <main className="pb-24 max-w-md mx-auto min-h-screen relative overflow-hidden">
         <AnimatePresence mode="wait">
-          {showAuth ? (
+          {showUpdatePassword ? (
+            <UpdatePasswordView
+              key="update-password"
+              onUpdate={handleUpdatePassword}
+              onCancel={() => setShowUpdatePassword(false)}
+            />
+          ) : showAuth ? (
             <AuthView 
               key="auth"
               onLogin={handleLogin}
@@ -3634,6 +3660,89 @@ function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (ema
               </button>
             </form>
           )}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// --- Update Password View ---
+function UpdatePasswordView({ onUpdate, onCancel }: { onUpdate: (password: string) => Promise<boolean>, onCancel: () => void, key?: React.Key }) {
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!password || password.length < 6) {
+      setError('A senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const success = await onUpdate(password);
+      if (!success) {
+        setError('Erro ao atualizar a senha.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Erro ao atualizar a senha.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="flex flex-col items-center justify-center min-h-screen p-6"
+    >
+      <div className="w-full max-w-sm space-y-8">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold tracking-tighter mb-2">
+            Atualizar Senha
+          </h1>
+          <p className="text-zinc-500 font-mono text-sm">
+            Digite sua nova senha abaixo
+          </p>
+        </div>
+
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
+            <div>
+              <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Nova Senha</label>
+              <input 
+                type="password" 
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors"
+                placeholder="********"
+                autoComplete="new-password"
+              />
+            </div>
+
+            {error && (
+              <div className="text-red-500 text-sm text-center bg-[#18181b] p-2 rounded-lg border border-[#18181b]">
+                {error}
+              </div>
+            )}
+
+            <button 
+              type="submit"
+              disabled={loading}
+              className="w-full py-4 bg-brand-500 text-zinc-950 hover:bg-brand-400 rounded-xl font-bold transition-colors shadow-lg shadow-brand-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Atualizando...' : 'Atualizar Senha'}
+            </button>
+            <button
+              type="button"
+              onClick={onCancel}
+              className="w-full py-2 text-zinc-400 hover:text-white text-sm transition-colors"
+            >
+              Cancelar
+            </button>
+          </form>
         </div>
       </div>
     </motion.div>
