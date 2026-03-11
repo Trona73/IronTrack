@@ -1494,7 +1494,6 @@ function BuilderView({
   
   // Filter State
   const [filterMuscle, setFilterMuscle] = useState<string>('Todos');
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [filterEquipment, setFilterEquipment] = useState<string>('Todos');
 
   // Get unique muscle groups and equipment from available exercises for filtering
@@ -2704,6 +2703,7 @@ function ExercisesView({
   const [filterEquipment, setFilterEquipment] = useState<string>('Todos');
   const [managingList, setManagingList] = useState<'muscle' | 'equipment' | null>(null);
   const [exerciseToDelete, setExerciseToDelete] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   // New Exercise State
   const [newExerciseName, setNewExerciseName] = useState('');
