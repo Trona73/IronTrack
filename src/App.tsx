@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User, TrendingUp, RotateCcw, BarChart2, Settings, GripVertical, Check, Zap, BookOpen, MoreVertical } from 'lucide-react';
+import { motion, AnimatePresence, Reorder } from 'motion/react';
 import { LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 import { WorkoutPlan, WorkoutSession, Exercise, PlannedExercise, CompletedSet, CompletedExercise, UserProfile, Equipment, MuscleGroup } from './types';
 import { EXERCISES, MOCK_PLANS } from './data';
