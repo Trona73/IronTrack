@@ -3397,7 +3397,7 @@ function ProfileView({ profile, onSave, onLogout }: { profile: UserProfile, onSa
 }
 // --- Auth View ---
 function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (email: string, pass: string) => Promise<boolean>, onCreateAccount: (profile: UserProfile) => Promise<boolean>, existingProfile?: UserProfile, key?: React.Key }) {
-  const [isLoginMode, setIsLoginMode] = useState(!!existingProfile?.email);
+  const [isLoginMode, setIsLoginMode] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
