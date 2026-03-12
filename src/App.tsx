@@ -590,8 +590,15 @@ const resumeWorkout = () => {
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
+      
+      // Desloga o usuário para forçá-lo a fazer login com a nova senha
+      await supabase.auth.signOut();
+      setSupabaseSession(null);
+      setIsAuthenticated(false);
+      setShowAuth(true);
       setShowUpdatePassword(false);
-      alert('Senha atualizada com sucesso!');
+      
+      alert('Senha atualizada com sucesso! Por favor, faça login com sua nova senha.');
       return true;
     } catch (e: any) {
       console.error('Error updating password:', e);
@@ -610,7 +617,10 @@ const resumeWorkout = () => {
             <UpdatePasswordView
               key="update-password"
               onUpdate={handleUpdatePassword}
-              onCancel={() => setShowUpdatePassword(false)}
+              onCancel={() => {
+                setShowUpdatePassword(false);
+                handleLogout();
+              }}
             />
           ) : showAuth ? (
             <AuthView 
