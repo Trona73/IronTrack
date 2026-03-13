@@ -1,4 +1,4 @@
-const CACHE_NAME = 'irontrack-v1';
+const CACHE_NAME = 'irontrack-v2';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -22,6 +22,11 @@ self.addEventListener('fetch', (event) => {
       .then((response) => {
         // Check if we received a valid response
         if (!response || response.status !== 200 || response.type !== 'basic') {
+          return response;
+        }
+
+        // Only cache http and https requests (prevents chrome-extension:// errors)
+        if (!event.request.url.startsWith('http')) {
           return response;
         }
 
