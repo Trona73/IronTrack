@@ -1,4 +1,4 @@
-const CACHE_NAME = 'irontrack-v5';
+const CACHE_NAME = 'irontrack-v6';
 const urlsToCache = [
   '/',
   '/index.html',
