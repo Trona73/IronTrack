@@ -1,8 +1,8 @@
-const CACHE_NAME = 'irontrack-v6';
+const CACHE_NAME = 'irontrack-v7';
 const urlsToCache = [
   '/',
   '/index.html',
-  '/icon.png',
+  '/icon.png?v=2',
   '/manifest.json'
 ];
 
