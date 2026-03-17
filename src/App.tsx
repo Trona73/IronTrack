@@ -2933,7 +2933,7 @@ function ExercisesView({
                       className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
                         (g === 'Todos' && filterMuscle === 'Todos') || selectedMain === g
                           ? 'border-brand-500 bg-brand-500/10 text-brand-400'
-                          : 'border-zinc-800 bg-zinc-900 text-zinc-500 hover:text-zinc-300'
+                          : 'border-zinc-700 bg-zinc-900 text-zinc-200 hover:text-white'
                       }`}
                     >
                       {g}
@@ -2949,7 +2949,7 @@ function ExercisesView({
                         className={`px-3 py-1 rounded-full text-[11px] font-medium border transition-all ${
                           filterMuscle === s
                             ? 'border-brand-500 bg-brand-500/10 text-brand-400'
-                            : 'border-zinc-800 bg-transparent text-zinc-500 hover:text-zinc-300'
+                            : 'border-zinc-700 bg-transparent text-zinc-200 hover:text-white'
                         }`}
                       >
                         {s.split(' - ')[1]}
@@ -2972,13 +2972,14 @@ function ExercisesView({
               .map(ex => (
             <div 
                 key={ex.id}
-                className="flex items-center justify-between bg-zinc-900 border border-zinc-800 p-4 rounded-xl group"
+                className="flex items-center justify-between bg-zinc-900 border border-zinc-800 p-4 rounded-lg group overflow-hidden relative"
               >
-                <div>
+                <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-brand-500" />
+                <div className="pl-3">
                   <div className="font-semibold">{ex.name}</div>
                   <div className="flex gap-1 mt-1.5">
-                    <span className="bg-zinc-800 text-zinc-400 font-mono text-[10px] px-2 py-0.5 rounded-full">{ex.muscleGroup.includes(' - ') ? ex.muscleGroup.split(' - ')[1] : ex.muscleGroup}</span>
-                    <span className="bg-zinc-800 text-zinc-400 font-mono text-[10px] px-2 py-0.5 rounded-full">{ex.equipment}</span>
+                    <span className="bg-zinc-800 text-zinc-200 font-mono text-[10px] px-2 py-0.5 rounded-full">{ex.muscleGroup.includes(' - ') ? ex.muscleGroup.split(' - ')[1] : ex.muscleGroup}</span>
+                    <span className="bg-zinc-800 text-zinc-200 font-mono text-[10px] px-2 py-0.5 rounded-full">{ex.equipment}</span>
                   </div>
                 </div>
                 <div className="relative">
