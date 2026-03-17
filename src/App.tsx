@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User, TrendingUp, RotateCcw, BarChart2, Settings, GripVertical, Check, Zap, BookOpen, MoreVertical } from 'lucide-react';
+import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User, TrendingUp, RotateCcw, BarChart2, Settings, GripVertical, Check, Zap, BookOpen, MoreVertical, Copy } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'motion/react';
 import { LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 import { WorkoutPlan, WorkoutSession, Exercise, PlannedExercise, PlannedSet, CompletedSet, CompletedExercise, UserProfile, Equipment, MuscleGroup } from './types';
@@ -405,6 +405,23 @@ useEffect(() => {
     setPlanToDelete(id);
   };
 
+const duplicateWorkoutPlan = async (plan: WorkoutPlan) => {
+    const newPlan: WorkoutPlan = {
+      ...plan,
+      id: `temp_${Date.now()}`,
+      name: `Cópia de ${plan.name}`,
+      daysOfWeek: []
+    };
+    setPlans(prev => [...prev, newPlan]);
+    if (supabaseSession) {
+      try {
+        const saved = await supabaseService.createWorkoutPlan(newPlan, supabaseSession.user.id);
+        setPlans(prev => prev.map(p => p.id === newPlan.id ? saved : p));
+      } catch (e) {
+        handleAuthError(e);
+      }
+    }
+  };
   const confirmDelete = async () => {
     if (planToDelete) {
       const id = planToDelete;
@@ -1235,6 +1252,7 @@ function DashboardView({
                     onStart={() => onStartWorkout(plan)} 
                     onEdit={() => onEditPlan(plan)}
                     onDelete={() => onDeletePlan(plan.id)}
+                    onDuplicate={() => duplicateWorkoutPlan(plan)}
                     compact={true}
                   />
                 ))}
@@ -1426,7 +1444,7 @@ function WeeklyScheduleView({
   );
 }
 
-function PlanCard({ plan, availableExercises, onStart, onEdit, onDelete, isCompleted, onActivate, compact = false }: { plan: WorkoutPlan, availableExercises: Exercise[], onStart: () => void, onEdit: () => void, onDelete: () => void, isCompleted?: boolean, onActivate?: () => void, compact?: boolean, key?: React.Key }) {
+function PlanCard({ plan, availableExercises, onStart, onEdit, onDelete, onDuplicate, isCompleted, onActivate, compact = false }: { plan: WorkoutPlan, availableExercises: Exercise[], onStart: () => void, onEdit: () => void, onDelete: () => void, onDuplicate?: () => void, isCompleted?: boolean, onActivate?: () => void, compact?: boolean, key?: React.Key }) {
   const daysMap = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
   
   return (
@@ -1439,6 +1457,15 @@ function PlanCard({ plan, availableExercises, onStart, onEdit, onDelete, isCompl
         <div className="flex items-center gap-2">
           
           <div className="flex gap-1">
+            {onDuplicate && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
+                className={`text-zinc-500 hover:text-zinc-300 ${compact ? 'p-1.5' : 'p-2'} rounded-full hover:bg-zinc-800 transition-colors`}
+                title="Duplicar treino"
+              >
+                <Copy size={compact ? 16 : 18} />
+              </button>
+            )}
             <button 
               onClick={(e) => { e.stopPropagation(); onEdit(); }}
               className={`text-zinc-500 hover:text-zinc-300 ${compact ? 'p-1.5' : 'p-2'} rounded-full hover:bg-zinc-800 transition-colors`}
