@@ -662,6 +662,7 @@ const resumeWorkout = () => {
                   }}
                   onEditPlan={editPlan}
                   onDeletePlan={deletePlan}
+                  onDuplicatePlan={duplicateWorkoutPlan}
                   onEditDay={(day) => {
                     setDayToEdit(day);
                     setCurrentView('weekly-schedule');
@@ -860,6 +861,7 @@ function DashboardView({
   onNewPlan, 
   onEditPlan, 
   onDeletePlan,
+  onDuplicatePlan,
   onEditDay,
   onOpenSettings
 }: { 
@@ -870,10 +872,11 @@ function DashboardView({
   onStartWorkout: (p: WorkoutPlan) => void, 
   onNewPlan: () => void, 
   onEditPlan: (p: WorkoutPlan) => void, 
-  onDeletePlan: (id: string) => void, 
+  onDeletePlan: (id: string) => void,
+  onDuplicatePlan: (plan: WorkoutPlan) => void,
   onEditDay: (day: number) => void,
   onOpenSettings: () => void,
-  key?: React.Key 
+  key?: React.Key
 }) {
   const today = new Date().getDay();
   
@@ -1252,7 +1255,7 @@ function DashboardView({
                     onStart={() => onStartWorkout(plan)} 
                     onEdit={() => onEditPlan(plan)}
                     onDelete={() => onDeletePlan(plan.id)}
-                    onDuplicate={() => duplicateWorkoutPlan(plan)}
+                    onDuplicate={() => onDuplicatePlan(plan)}
                     compact={true}
                   />
                 ))}
