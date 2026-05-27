@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User, TrendingUp, RotateCcw, BarChart2, Settings, GripVertical, Check, Zap, BookOpen, MoreVertical, Copy } from 'lucide-react';
+import { Home, PlusCircle, Activity, History as HistoryIcon, Dumbbell, Play, CheckCircle2, Clock, Calendar, ChevronRight, X, Save, Trash2, Pencil, User, TrendingUp, RotateCcw, BarChart2, Settings, GripVertical, Check, Zap, BookOpen, MoreVertical, Copy, Info } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'motion/react';
 import { LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 import { WorkoutPlan, WorkoutSession, Exercise, PlannedExercise, PlannedSet, CompletedSet, CompletedExercise, UserProfile, Equipment, MuscleGroup } from './types';
@@ -2773,12 +2773,14 @@ function ExercisesView({
   const [managingList, setManagingList] = useState<'muscle' | 'equipment' | null>(null);
   const [exerciseToDelete, setExerciseToDelete] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [infoPopupId, setInfoPopupId] = useState<string | null>(null);
 
   // New Exercise State
   const [newExerciseName, setNewExerciseName] = useState('');
   const [newExerciseMuscle, setNewExerciseMuscle] = useState<string>(muscleGroups[0] || '');
   const [newExerciseEquipment, setNewExerciseEquipment] = useState<string>(equipmentList[0] || '');
   const [newExerciseType, setNewExerciseType] = useState<'weighted' | 'reps_only' | 'timed' | 'cardio'>('weighted');
+  const [newExerciseDescription, setNewExerciseDescription] = useState('');
 
   const handleCreateExercise = () => {
     if (!newExerciseName.trim()) return;
@@ -2789,7 +2791,8 @@ function ExercisesView({
         name: newExerciseName,
         muscleGroup: newExerciseMuscle,
         equipment: newExerciseEquipment,
-        type: newExerciseType
+        type: newExerciseType,
+        description: newExerciseDescription
       });
       setEditingExercise(null);
     } else {
@@ -2798,12 +2801,14 @@ function ExercisesView({
         name: newExerciseName,
         muscleGroup: newExerciseMuscle,
         equipment: newExerciseEquipment,
-        type: newExerciseType
+        type: newExerciseType,
+        description: newExerciseDescription
       };
       onAddExercise(newExercise);
     }
     
     setNewExerciseName('');
+    setNewExerciseDescription('');
     setShowCreate(false);
   };
 
@@ -2813,12 +2818,14 @@ function ExercisesView({
     setNewExerciseMuscle(ex.muscleGroup);
     setNewExerciseEquipment(ex.equipment);
     setNewExerciseType(ex.type || 'weighted');
+    setNewExerciseDescription(ex.description || '');
     setShowCreate(true);
   };
 
   const cancelEditing = () => {
     setEditingExercise(null);
     setNewExerciseName('');
+    setNewExerciseDescription('');
     setShowCreate(false);
   };
 
@@ -2861,6 +2868,17 @@ function ExercisesView({
               onChange={e => setNewExerciseName(e.target.value)}
               placeholder="Ex: Agachamento Búlgaro"
               className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-lg focus:outline-none focus:border-brand-500 transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">INFORMAÇÕES</label>
+            <textarea 
+              value={newExerciseDescription}
+              onChange={e => setNewExerciseDescription(e.target.value)}
+              placeholder="Instruções ou informações sobre o exercício"
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-lg focus:outline-none focus:border-brand-500 transition-colors"
+              rows={3}
             />
           </div>
 
@@ -2985,13 +3003,28 @@ function ExercisesView({
                     <span className="bg-zinc-800 text-zinc-200 font-mono text-[10px] px-2 py-0.5 rounded-full">{ex.equipment}</span>
                   </div>
                 </div>
-                <div className="relative">
+                <div className="relative flex items-center gap-1">
+                  {ex.description && (
+                    <button
+                      onClick={() => setInfoPopupId(infoPopupId === ex.id ? null : ex.id)}
+                      className={`p-2 rounded-full transition-colors ${infoPopupId === ex.id ? 'text-brand-500 bg-brand-500/10' : 'text-zinc-600 hover:text-brand-500 hover:bg-zinc-800'}`}
+                    >
+                      <Info size={18} />
+                    </button>
+                  )}
                   <button
                     onClick={() => setOpenMenuId(openMenuId === ex.id ? null : ex.id)}
                     className="p-2 text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800 rounded-full transition-colors"
                   >
                     <MoreVertical size={18} />
                   </button>
+
+                  {infoPopupId === ex.id && ex.description && (
+                    <div className="absolute right-10 top-8 z-30 bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl p-4 w-64 text-sm text-zinc-300 whitespace-pre-wrap">
+                      {ex.description}
+                    </div>
+                  )}
+
                   {openMenuId === ex.id && (
                     <div className="absolute right-0 top-8 z-10 bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl overflow-hidden w-36">
                       <button
