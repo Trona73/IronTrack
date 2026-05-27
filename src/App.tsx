@@ -2972,9 +2972,9 @@ function ExercisesView({
               .map(ex => (
             <div 
                 key={ex.id}
-                className={`flex items-center justify-between bg-zinc-900 border border-zinc-800 p-4 rounded-lg group relative ${openMenuId === ex.id ? 'z-50' : 'z-auto'}`}
+                className="flex items-center justify-between bg-zinc-900 border border-zinc-800 p-4 rounded-lg group overflow-hidden relative"
               >
-                <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-brand-500 rounded-l-lg" />
+                <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-brand-500" />
                 <div className="pl-3">
                   <div className="font-semibold">{ex.name}</div>
                   <div className="flex gap-1 mt-1.5">
@@ -2990,7 +2990,7 @@ function ExercisesView({
                     <MoreVertical size={18} />
                   </button>
                   {openMenuId === ex.id && (
-                    <div className="absolute right-0 top-8 z-50 bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl overflow-hidden w-36">
+                    <div className="absolute right-0 top-8 z-10 bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl overflow-hidden w-36">
                       <button
                         onClick={() => { startEditing(ex); setOpenMenuId(null); }}
                         className="w-full flex items-center gap-3 px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"

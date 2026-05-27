@@ -26,7 +26,7 @@ export const supabaseService = {
       .from('exercises')
       .select('id')
       .eq('name', exercise.name)
-      .single();
+      .maybeSingle();
 
     if (existing) return existing.id;
 
@@ -80,7 +80,7 @@ export const supabaseService = {
       .from('user_settings')
       .select('*')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
     if (error) return null;
     if (!data) return null;
