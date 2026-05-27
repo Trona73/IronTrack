@@ -1671,9 +1671,10 @@ function BuilderView({
         </div>
 
         <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-          {availableExercises
+          {[...availableExercises]
             .filter(ex => (filterMuscle === 'Todos' || ex.muscleGroup === filterMuscle) && 
                           (filterEquipment === 'Todos' || ex.equipment === filterEquipment))
+            .sort((a, b) => a.muscleGroup.trim().localeCompare(b.muscleGroup.trim(), 'pt-BR', { sensitivity: 'base' }) || a.name.trim().localeCompare(b.name.trim(), 'pt-BR', { sensitivity: 'base' }))
             .map(ex => (
             <button 
               key={ex.id}
@@ -2921,10 +2922,10 @@ function ExercisesView({
         <>
           {/* Filters — Nível 1 + Nível 2 */}
           {(() => {
-            const allGroups = Array.from(new Set(exercises.map(e => e.muscleGroup))).sort();
-            const mainGroups = ['Todos', ...Array.from(new Set(allGroups.map(g => g.includes(' - ') ? g.split(' - ')[0] : g))).sort()];
+            const allGroups = Array.from(new Set(exercises.map(e => e.muscleGroup))).sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
+            const mainGroups = ['Todos', ...Array.from(new Set(allGroups.map(g => g.includes(' - ') ? g.split(' - ')[0] : g))).sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }))];
             const selectedMain = filterMuscle === 'Todos' ? null : (filterMuscle.includes(' - ') ? filterMuscle.split(' - ')[0] : filterMuscle);
-            const subs = selectedMain ? allGroups.filter(g => g.startsWith(selectedMain + ' - ')).sort() : [];
+            const subs = selectedMain ? allGroups.filter(g => g.startsWith(selectedMain + ' - ')).sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' })) : [];
             return (
               <>
                 <div className="flex gap-2 flex-wrap">
@@ -2970,7 +2971,7 @@ function ExercisesView({
                 if (filterMuscle.includes(' - ')) return ex.muscleGroup === filterMuscle;
                 return ex.muscleGroup === filterMuscle || ex.muscleGroup.startsWith(filterMuscle + ' - ');
               })
-              .sort((a, b) => (a.muscleGroup + a.name).localeCompare(b.muscleGroup + b.name))
+              .sort((a, b) => a.muscleGroup.trim().localeCompare(b.muscleGroup.trim(), 'pt-BR', { sensitivity: 'base' }) || a.name.trim().localeCompare(b.name.trim(), 'pt-BR', { sensitivity: 'base' }))
               .map(ex => (
             <div 
                 key={ex.id}
