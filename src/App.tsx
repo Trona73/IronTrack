@@ -188,6 +188,7 @@ export default function App() {
       setShowAuth(true);
     } else {
       console.error('Supabase error:', error);
+      alert('Erro de sincronização com o Supabase: ' + (error?.message || JSON.stringify(error)));
     }
   };
 
