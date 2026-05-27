@@ -754,6 +754,7 @@ const resumeWorkout = () => {
               profile={userProfile} 
               onSave={setUserProfile}
               onLogout={handleLogout}
+              isSupabaseConnected={!!supabaseSession}
             />
           )}
           </>
@@ -3262,7 +3263,7 @@ function SettingsView({ onBack, onOpenManual, profile, onUpdateProfile }: { onBa
 }
 
 // --- Profile View ---
-function ProfileView({ profile, onSave, onLogout }: { profile: UserProfile, onSave: (p: UserProfile) => void, onLogout: () => void, key?: React.Key }) {
+function ProfileView({ profile, onSave, onLogout, isSupabaseConnected }: { profile: UserProfile, onSave: (p: UserProfile) => void, onLogout: () => void, isSupabaseConnected: boolean, key?: React.Key }) {
   const [localProfile, setLocalProfile] = useState(profile);
   const [isEditing, setIsEditing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -3286,7 +3287,12 @@ function ProfileView({ profile, onSave, onLogout }: { profile: UserProfile, onSa
       <header className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight mb-2">Perfil</h1>
-          <p className="text-zinc-400">Seus dados pessoais.</p>
+          <div className="flex items-center gap-2">
+            <p className="text-zinc-400">Seus dados pessoais.</p>
+            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium font-mono ${isSupabaseConnected ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'}`}>
+              ● {isSupabaseConnected ? 'Sincronizado' : 'Modo Offline'}
+            </span>
+          </div>
         </div>
         {!isEditing ? (
           <button 
@@ -3565,9 +3571,22 @@ function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (ema
             <span className="text-white">Iron</span>
             <span className="text-brand-500">Track</span>
           </h1>
-          <p className="text-zinc-500 font-mono text-sm uppercase tracking-[0.2em]">
+          <p className="text-zinc-500 font-mono text-sm uppercase tracking-[0.2em] mb-4">
             Sua rotina de força
           </p>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono bg-zinc-900 border border-zinc-800">
+            {import.meta.env.VITE_SUPABASE_URL ? (
+              <>
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                <span className="text-zinc-300">Supabase Configurado</span>
+              </>
+            ) : (
+              <>
+                <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                <span className="text-zinc-300">Sem Conexão (Local)</span>
+              </>
+            )}
+          </div>
         </div>
 
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-6">
