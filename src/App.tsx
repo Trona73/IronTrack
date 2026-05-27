@@ -2993,7 +2993,7 @@ function ExercisesView({
               .map(ex => (
             <div 
                 key={ex.id}
-                className={`flex items-center justify-between bg-zinc-900 border border-zinc-800 p-4 rounded-lg group relative ${openMenuId === ex.id ? 'z-20' : 'z-0'}`}
+                className={`flex items-center justify-between bg-zinc-900 border border-zinc-800 p-4 rounded-lg group relative ${(openMenuId === ex.id || infoPopupId === ex.id) ? 'z-20' : 'z-0'}`}
               >
                 <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-brand-500 rounded-l-lg" />
                 <div className="pl-3">
