@@ -217,6 +217,15 @@ export default function App() {
           weeklyTrainingGoal: settings.weeklyTrainingGoal
         }));
       }
+      
+      const cloudSessions = await supabaseService.getWorkoutSessions(userId);
+      if (cloudSessions.length > 0) {
+        setSessions(prev => {
+          const localOnly = prev.filter(p => !cloudSessions.some(c => c.id === p.id));
+          return [...cloudSessions, ...localOnly].sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+        });
+      }
+
       setIsSupabaseLoaded(true);
     } catch (error) {
       handleAuthError(error);

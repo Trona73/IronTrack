@@ -240,6 +240,24 @@ export const supabaseService = {
     if (error) throw error;
   },
 
+  async getWorkoutSessions(userId: string): Promise<WorkoutSession[]> {
+    const { data, error } = await supabase
+      .from('workout_sessions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('start_time', { ascending: false });
+
+    if (error) throw error;
+
+    return (data || []).map((session: any) => ({
+      id: session.id,
+      planId: session.plan_id,
+      startTime: session.start_time,
+      endTime: session.end_time,
+      exercises: session.exercises
+    }));
+  },
+
   async saveWorkoutSession(session: WorkoutSession, userId: string): Promise<void> {
     const { error } = await supabase
       .from('workout_sessions')
