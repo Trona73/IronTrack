@@ -2703,7 +2703,48 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory }: { 
                       exit={{ height: 0, opacity: 0 }}
                       className="overflow-hidden border-t border-zinc-800/50 bg-zinc-950/30"
                     >
-                      <div className="p-4 space-y-4">
+                      <div className="p-4">
+                        {/* CHART SECTION */}
+                        {(() => {
+                          const chartData = history
+                            .slice(0, 10)
+                            .reverse()
+                            .map(h => {
+                              let value = 0;
+                              if (exType === 'weighted') value = Math.max(...h.sets.map(s => s.weight || 0));
+                              else if (exType === 'reps_only') value = h.sets.reduce((a, s) => a + (s.reps || 0), 0);
+                              else if (exType === 'timed') value = h.sets.reduce((a, s) => a + (s.duration || 0), 0);
+                              else if (exType === 'cardio') value = h.sets.reduce((a, s) => a + (s.distance || 0), 0);
+                              return {
+                                date: h.date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+                                value
+                              };
+                            });
+
+                          return chartData.length > 1 ? (
+                            <div className="mb-6 h-40 w-full">
+                              <h4 className="text-[10px] font-bold text-zinc-500 mb-2 uppercase tracking-wider">
+                                Evolução ({exType === 'weighted' ? 'Carga Máx (kg)' : exType === 'cardio' ? 'Distância (km)' : 'Volume'})
+                              </h4>
+                              <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={chartData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+                                  <XAxis dataKey="date" stroke="#52525b" fontSize={10} tickLine={false} axisLine={false} />
+                                  <YAxis stroke="#52525b" fontSize={10} tickLine={false} axisLine={false} />
+                                  <Tooltip 
+                                    contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '8px', fontSize: '12px' }}
+                                    itemStyle={{ color: '#0ea5e9' }}
+                                    labelStyle={{ color: '#a1a1aa', marginBottom: '4px' }}
+                                  />
+                                  <Line type="monotone" dataKey="value" stroke="#0ea5e9" strokeWidth={2} dot={{ r: 4, fill: '#18181b', strokeWidth: 2 }} activeDot={{ r: 6 }} name="Valor" />
+                                </LineChart>
+                              </ResponsiveContainer>
+                            </div>
+                          ) : null;
+                        })()}
+                        
+                        <div className="space-y-4">
+                        <h4 className="text-[10px] font-bold text-zinc-500 mb-2 uppercase tracking-wider">Últimos Treinos</h4>
                         {history.slice(0, 8).map((entry, idx) => (
                           <div key={idx} className="border-b border-zinc-800/30 pb-3 last:border-0 last:pb-0">
                             <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider mb-2">
@@ -2730,6 +2771,7 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory }: { 
                             </div>
                           </div>
                         ))}
+                      </div>
                       </div>
                     </motion.div>
                   )}
