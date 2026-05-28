@@ -221,7 +221,7 @@ export default function App() {
       const cloudSessions = await supabaseService.getWorkoutSessions(userId);
       if (cloudSessions.length > 0) {
         setSessions(prev => {
-          const localOnly = prev.filter(p => !cloudSessions.some(c => c.id === p.id));
+          const localOnly = prev.filter(p => !cloudSessions.some(c => c.startTime === p.startTime));
           return [...cloudSessions, ...localOnly].sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
         });
       }
@@ -2589,7 +2589,44 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory }: { 
         </div>
       </div>
 
-      
+      {muscleChartData.length > 0 && (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+          <h2 className="text-xl font-bold mb-6">Progresso por Grupo Muscular</h2>
+          <div className="space-y-4">
+            {muscleChartData.map(data => {
+              const maxSets = Math.max(...muscleChartData.map(d => d.sets));
+              const percentage = maxSets > 0 ? (data.sets / maxSets) * 100 : 0;
+              const isSelected = selectedMuscleGroup === data.name;
+              
+              return (
+                <div 
+                  key={data.name} 
+                  className={`group cursor-pointer p-2 -mx-2 rounded-xl transition-colors ${isSelected ? 'bg-brand-500/10' : 'hover:bg-zinc-800/50'}`}
+                  onClick={() => setSelectedMuscleGroup(isSelected ? null : data.name)}
+                >
+                  <div className="flex justify-between items-end mb-2">
+                    <div>
+                      <span className={`font-bold text-sm ${isSelected ? 'text-brand-500' : 'text-zinc-200'}`}>{data.name}</span>
+                      <span className="text-xs text-zinc-500 ml-2 hidden sm:inline-block">Equip. freq: {data.topEquip}</span>
+                    </div>
+                    <div className="text-sm font-mono font-bold text-zinc-400">
+                      {data.sets} <span className="text-xs font-normal opacity-50">séries</span>
+                    </div>
+                  </div>
+                  <div className="h-2 w-full bg-zinc-950 rounded-full overflow-hidden border border-zinc-800">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${percentage}%` }}
+                      transition={{ duration: 1, ease: "easeOut" }}
+                      className={`h-full rounded-full ${isSelected ? 'bg-brand-500' : 'bg-zinc-700 group-hover:bg-zinc-600'}`}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {exercisesWithHistory.length === 0 ? (
          <div className="text-center py-10 text-zinc-500 italic">
