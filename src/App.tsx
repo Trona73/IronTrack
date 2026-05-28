@@ -2395,16 +2395,7 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory }: { 
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   
-  const muscleStats: Record<string, { sets: number, equipmentCounts: Record<string, number> }> = {
-    'Peito': { sets: 0, equipmentCounts: {} }, 
-    'Costas': { sets: 0, equipmentCounts: {} }, 
-    'Quadríceps': { sets: 0, equipmentCounts: {} }, 
-    'Posteriores': { sets: 0, equipmentCounts: {} }, 
-    'Ombros': { sets: 0, equipmentCounts: {} }, 
-    'Bíceps': { sets: 0, equipmentCounts: {} }, 
-    'Tríceps': { sets: 0, equipmentCounts: {} }, 
-    'Core': { sets: 0, equipmentCounts: {} }
-  };
+  const muscleStats: Record<string, { sets: number, equipmentCounts: Record<string, number> }> = {};
 
   sessions.forEach(session => {
     const sessionDate = new Date(session.startTime);
@@ -2415,11 +2406,13 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory }: { 
           const group = getDetailedMuscleGroup(exerciseDef);
           const setsCount = ex.sets.length;
           
-          if (muscleStats[group]) {
-            muscleStats[group].sets += setsCount;
-            const equip = exerciseDef.equipment;
-            muscleStats[group].equipmentCounts[equip] = (muscleStats[group].equipmentCounts[equip] || 0) + setsCount;
+          if (!muscleStats[group]) {
+            muscleStats[group] = { sets: 0, equipmentCounts: {} };
           }
+          
+          muscleStats[group].sets += setsCount;
+          const equip = exerciseDef.equipment;
+          muscleStats[group].equipmentCounts[equip] = (muscleStats[group].equipmentCounts[equip] || 0) + setsCount;
         }
       });
     }
@@ -2607,7 +2600,7 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory }: { 
                   <div className="flex justify-between items-end mb-2">
                     <div>
                       <span className={`font-bold text-sm ${isSelected ? 'text-brand-500' : 'text-zinc-200'}`}>{data.name}</span>
-                      <span className="text-xs text-zinc-500 ml-2 hidden sm:inline-block">Equip. freq: {data.topEquip}</span>
+                      <span className="text-xs text-zinc-500 ml-2 hidden sm:inline-block">Equip. freq: {data.topEquipment}</span>
                     </div>
                     <div className="text-sm font-mono font-bold text-zinc-400">
                       {data.sets} <span className="text-xs font-normal opacity-50">séries</span>
