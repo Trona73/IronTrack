@@ -263,7 +263,7 @@ export const supabaseService = {
       .from('workout_sessions')
       .insert({
         user_id: userId,
-        plan_id: session.planId,
+        plan_id: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(session.planId || '') ? session.planId : null,
         start_time: session.startTime,
         end_time: session.endTime,
         exercises: session.exercises
