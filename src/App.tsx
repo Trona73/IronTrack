@@ -226,8 +226,15 @@ export default function App() {
           // Auto-sync stranded local sessions
           if (localOnly.length > 0) {
             localOnly.forEach(session => {
+              // Fix invalid IDs in stranded sessions before syncing
+              const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(session.id);
+              if (!isUuid) {
+                session.id = crypto.randomUUID();
+              }
               supabaseService.saveWorkoutSession(session).catch(e => console.error("Auto-sync error:", e));
             });
+            // Update local storage with the fixed IDs
+            localStorage.setItem('iron_sessions', JSON.stringify([...cloudSessions, ...localOnly].sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())));
           }
           
           return [...cloudSessions, ...localOnly].sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
@@ -1769,7 +1776,7 @@ function BuilderView({
     setExercises(prev => [
       ...prev, 
       {
-        id: Math.random().toString(36).substring(7),
+        id: crypto.randomUUID(),
         exerciseId,
         sets: [{ ...defaultSet }, { ...defaultSet }, { ...defaultSet }]
       }
@@ -1808,7 +1815,7 @@ function BuilderView({
   const handleSave = () => {
     if (!name.trim() || exercises.length === 0) return;
     onSave({
-      id: initialPlan?.id || Math.random().toString(36).substring(7),
+      id: initialPlan?.id || crypto.randomUUID(),
       name,
       daysOfWeek: [],
       exercises
@@ -2286,7 +2293,7 @@ function ActiveWorkoutView({ plan, availableExercises, weightIncrement, onFinish
     } else {
       // Finish workout
       onFinish({
-        id: Math.random().toString(36).substring(7),
+        id: crypto.randomUUID(),
         planId: plan.id,
         startTime,
         endTime: new Date().toISOString(),
