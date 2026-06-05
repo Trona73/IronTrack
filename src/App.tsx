@@ -222,6 +222,14 @@ export default function App() {
       if (cloudSessions.length > 0) {
         setSessions(prev => {
           const localOnly = prev.filter(p => !cloudSessions.some(c => c.startTime === p.startTime));
+          
+          // Auto-sync stranded local sessions
+          if (localOnly.length > 0) {
+            localOnly.forEach(session => {
+              supabaseService.saveWorkoutSession(session).catch(e => console.error("Auto-sync error:", e));
+            });
+          }
+          
           return [...cloudSessions, ...localOnly].sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
         });
       }
