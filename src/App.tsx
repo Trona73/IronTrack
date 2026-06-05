@@ -895,6 +895,8 @@ function DashboardView({
   const [showPlanSelector, setShowPlanSelector] = useState(false);
   const [isWeek1Expanded, setIsWeek1Expanded] = useState(true);
   const [isWeek2Expanded, setIsWeek2Expanded] = useState(true);
+  const [isWeek3Expanded, setIsWeek3Expanded] = useState(true);
+  const [isWeek4Expanded, setIsWeek4Expanded] = useState(true);
   const [isAllWorkoutsExpanded, setIsAllWorkoutsExpanded] = useState(true);
   const [reactivatedPlans, setReactivatedPlans] = useState<string[]>([]);
   const daysMap = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -918,12 +920,8 @@ function DashboardView({
 
   const getDayDate = (dayIndex: number) => {
     const target = new Date(week1StartDate);
-    let offset = 0;
-    
-    if (dayIndex === 0) offset = 6; // Sunday Week 1
-    else if (dayIndex === 7) offset = 13; // Sunday Week 2
-    else if (dayIndex >= 1 && dayIndex <= 6) offset = dayIndex - 1; // Mon-Sat Week 1
-    else if (dayIndex >= 8 && dayIndex <= 13) offset = dayIndex - 1; // Mon-Sat Week 2
+    let offset = dayIndex - 1;
+    if (dayIndex % 7 === 0) offset = dayIndex + 6;
     
     target.setDate(week1StartDate.getDate() + offset);
     return target;
@@ -941,19 +939,30 @@ function DashboardView({
   };
   const week2StartDate = new Date(week1StartDate);
   week2StartDate.setDate(week1StartDate.getDate() + 7);
+  const week3StartDate = new Date(week1StartDate);
+  week3StartDate.setDate(week1StartDate.getDate() + 14);
+  const week4StartDate = new Date(week1StartDate);
+  week4StartDate.setDate(week1StartDate.getDate() + 21);
 
   const now = new Date();
   now.setHours(0, 0, 0, 0);
   const weekStart = new Date(week1StartDate);
   weekStart.setHours(0, 0, 0, 0);
-  const isWeek1 = now >= weekStart && now < new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+  
+  const diffTime = now.getTime() - weekStart.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  let currentWeekIndex = Math.floor(diffDays / 7);
+  
+  if (currentWeekIndex < 0) {
+    currentWeekIndex = (currentWeekIndex % 4 + 4) % 4;
+  } else {
+    currentWeekIndex = currentWeekIndex % 4;
+  }
+  
   const dayOfWeek = today;
-  const week2Day = today + 7;
+  const currentCycleDay = dayOfWeek === 0 ? (currentWeekIndex * 7) : (dayOfWeek + (currentWeekIndex * 7));
 
-  const todaysPlans = plans.filter(p => {
-    if (isWeek1) return p.daysOfWeek.includes(dayOfWeek);
-    else return p.daysOfWeek.includes(week2Day);
-  });
+  const todaysPlans = plans.filter(p => p.daysOfWeek.includes(currentCycleDay));
   const getDayStatus = (dayIndex: number, dayPlans: WorkoutPlan[]) => {
     if (dayPlans.length === 0) return { isCompleted: false, isMissed: false };
     
@@ -1239,6 +1248,430 @@ function DashboardView({
       </section>
 
       <section>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <Calendar className="text-brand-500" size={20} />
+            Treino de Hoje
+          </h2>
+        </div>
+        
+        {todaysPlans.length > 0 ? (
+          <div className="space-y-4">
+            {todaysPlans.map(plan => (
+              <PlanCard 
+                key={plan.id} 
+                plan={plan} 
+                availableExercises={availableExercises}
+                isCompleted={isPlanCompletedToday(plan.id)}
+                onActivate={() => setReactivatedPlans(prev => [...prev, plan.id])}
+                onStart={() => onStartWorkout(plan)} 
+                onEdit={() => onEditPlan(plan)}
+                onDelete={() => onDeletePlan(plan.id)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 text-center">
+            <Dumbbell className="mx-auto text-zinc-600 mb-3" size={32} />
+            <p className="text-zinc-400 mb-4">Nenhum treino programado para hoje.</p>
+            <button 
+              onClick={() => setShowPlanSelector(true)}
+              className="bg-zinc-800 text-zinc-200 px-4 py-2 rounded-full text-sm font-medium hover:bg-zinc-700 transition-colors"
+            >
+              Selecionar Treino
+            </button>
+          </div>
+        )}
+      </section>
+
+      <section>
+        <div className="w-full flex items-center justify-between mb-4 group">
+          <button 
+            onClick={() => setIsWeek1Expanded(!isWeek1Expanded)}
+            className="flex items-center gap-2"
+          >
+            <h2 className="text-xl font-semibold">Semana 01</h2>
+            <ChevronRight 
+              className={`text-zinc-500 group-hover:text-zinc-300 transition-transform duration-200 ${isWeek1Expanded ? 'rotate-90' : ''}`} 
+              size={20} 
+            />
+          </button>
+          <div 
+            className="relative group/date cursor-pointer"
+            onClick={() => {
+              try {
+                week1DateInputRef.current?.showPicker();
+              } catch (error) {
+                console.log('showPicker not supported', error);
+                week1DateInputRef.current?.focus();
+              }
+            }}
+          >
+            <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 hover:border-brand-500/50 rounded-lg px-3 py-1.5 transition-colors pointer-events-none">
+              <Calendar size={14} className="text-brand-500" />
+              <span className="text-zinc-300 font-mono text-sm font-medium">
+                {week1StartDate.getDate().toString().padStart(2, '0')}
+              </span>
+            </div>
+            <input
+              ref={week1DateInputRef}
+              type="date"
+              className="absolute inset-0 opacity-0 w-full h-full pointer-events-none"
+              onChange={handleDateChange}
+              value={week1StartDate.toISOString().split('T')[0]}
+            />
+          </div>
+        </div>
+        <AnimatePresence>
+          {isWeek1Expanded && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="grid grid-cols-1 gap-2">
+                {[1, 2, 3, 4, 5, 6, 0].map(day => { // Start from Monday (1) to Sunday (0)
+                  const dayPlans = plans.filter(p => p.daysOfWeek.includes(day));
+                  const { isCompleted, isMissed } = getDayStatus(day, dayPlans);
+                  
+                  return (
+                    <div key={day} className={`bg-zinc-900 border border-zinc-800 rounded-xl p-3 flex items-center justify-between transition-all ${isCompleted || isMissed || dayPlans.length === 0 ? 'opacity-60' : ''}`}>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3">
+                          <h3 className="font-bold text-brand-500 shrink-0 w-24">{fullDaysMap[day]}</h3>
+                          <div className="flex-1 min-w-0 flex flex-wrap gap-x-3 gap-y-1 items-center">
+                            {dayPlans.length > 0 ? (
+                              <>
+                                {dayPlans.map(plan => (
+                                  <span key={plan.id} className="text-zinc-400 text-xs truncate flex items-center gap-1">
+                                    <div className="w-1 h-1 rounded-full bg-brand-500/50" />
+                                    {plan.name}
+                                  </span>
+                                ))}
+                                {isMissed && (
+                                  <span className="text-red-500 text-[10px] font-bold uppercase tracking-wider ml-2">
+                                    Treino não realizado
+                                  </span>
+                                )}
+                                {isCompleted && (
+                                  <span className="text-green-500 text-[10px] font-bold uppercase tracking-wider ml-2">
+                                    Treino Finalizado
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-brand-500 text-xs italic">Descanso</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => onEditDay(day)}
+                        className="text-zinc-600 hover:text-zinc-300 p-1.5 ml-2 rounded-full hover:bg-zinc-800 transition-colors"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </section>
+
+      <section>
+        <div className="w-full flex items-center justify-between mb-4 group">
+          <button 
+            onClick={() => setIsWeek3Expanded(!isWeek3Expanded)}
+            className="flex items-center gap-2"
+          >
+            <h2 className="text-xl font-semibold">Semana 03</h2>
+            <ChevronRight 
+              className={`text-zinc-500 group-hover:text-zinc-300 transition-transform duration-200 ${isWeek3Expanded ? 'rotate-90' : ''}`} 
+              size={20} 
+            />
+          </button>
+          <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 opacity-60">
+            <Calendar size={14} className="text-zinc-500" />
+            <span className="text-zinc-500 font-mono text-sm font-medium">
+              {week3StartDate.getDate().toString().padStart(2, '0')}
+            </span>
+          </div>
+        </div>
+        <AnimatePresence>
+          {isWeek3Expanded && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="grid grid-cols-1 gap-2">
+                {[15, 16, 17, 18, 19, 20, 14].map(day => { // Start from Monday (15) to Sunday (14)
+                  const dayPlans = plans.filter(p => p.daysOfWeek.includes(day));
+                  const { isCompleted, isMissed } = getDayStatus(day, dayPlans);
+
+                  return (
+                    <div key={day} className={`bg-zinc-900 border border-zinc-800 rounded-xl p-3 flex items-center justify-between transition-all ${isCompleted || isMissed || dayPlans.length === 0 ? 'opacity-60' : ''}`}>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3">
+                          <h3 className="font-bold text-brand-500 shrink-0 w-24">{fullDaysMap[day % 7]}</h3>
+                          <div className="flex-1 min-w-0 flex flex-wrap gap-x-3 gap-y-1 items-center">
+                            {dayPlans.length > 0 ? (
+                              <>
+                                {dayPlans.map(plan => (
+                                  <span key={plan.id} className="text-zinc-400 text-xs truncate flex items-center gap-1">
+                                    <div className="w-1 h-1 rounded-full bg-brand-500/50" />
+                                    {plan.name}
+                                  </span>
+                                ))}
+                                {isMissed && (
+                                  <span className="text-red-500 text-[10px] font-bold uppercase tracking-wider ml-2">
+                                    Treino não realizado
+                                  </span>
+                                )}
+                                {isCompleted && (
+                                  <span className="text-green-500 text-[10px] font-bold uppercase tracking-wider ml-2">
+                                    Treino Finalizado
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-brand-500 text-xs italic">Descanso</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => onEditDay(day)}
+                        className="text-zinc-600 hover:text-zinc-300 p-1.5 ml-2 rounded-full hover:bg-zinc-800 transition-colors"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </section>
+
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <Calendar className="text-brand-500" size={20} />
+            Treino de Hoje
+          </h2>
+        </div>
+        
+        {todaysPlans.length > 0 ? (
+          <div className="space-y-4">
+            {todaysPlans.map(plan => (
+              <PlanCard 
+                key={plan.id} 
+                plan={plan} 
+                availableExercises={availableExercises}
+                isCompleted={isPlanCompletedToday(plan.id)}
+                onActivate={() => setReactivatedPlans(prev => [...prev, plan.id])}
+                onStart={() => onStartWorkout(plan)} 
+                onEdit={() => onEditPlan(plan)}
+                onDelete={() => onDeletePlan(plan.id)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 text-center">
+            <Dumbbell className="mx-auto text-zinc-600 mb-3" size={32} />
+            <p className="text-zinc-400 mb-4">Nenhum treino programado para hoje.</p>
+            <button 
+              onClick={() => setShowPlanSelector(true)}
+              className="bg-zinc-800 text-zinc-200 px-4 py-2 rounded-full text-sm font-medium hover:bg-zinc-700 transition-colors"
+            >
+              Selecionar Treino
+            </button>
+          </div>
+        )}
+      </section>
+
+      <section>
+        <div className="w-full flex items-center justify-between mb-4 group">
+          <button 
+            onClick={() => setIsWeek1Expanded(!isWeek1Expanded)}
+            className="flex items-center gap-2"
+          >
+            <h2 className="text-xl font-semibold">Semana 01</h2>
+            <ChevronRight 
+              className={`text-zinc-500 group-hover:text-zinc-300 transition-transform duration-200 ${isWeek1Expanded ? 'rotate-90' : ''}`} 
+              size={20} 
+            />
+          </button>
+          <div 
+            className="relative group/date cursor-pointer"
+            onClick={() => {
+              try {
+                week1DateInputRef.current?.showPicker();
+              } catch (error) {
+                console.log('showPicker not supported', error);
+                week1DateInputRef.current?.focus();
+              }
+            }}
+          >
+            <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 hover:border-brand-500/50 rounded-lg px-3 py-1.5 transition-colors pointer-events-none">
+              <Calendar size={14} className="text-brand-500" />
+              <span className="text-zinc-300 font-mono text-sm font-medium">
+                {week1StartDate.getDate().toString().padStart(2, '0')}
+              </span>
+            </div>
+            <input
+              ref={week1DateInputRef}
+              type="date"
+              className="absolute inset-0 opacity-0 w-full h-full pointer-events-none"
+              onChange={handleDateChange}
+              value={week1StartDate.toISOString().split('T')[0]}
+            />
+          </div>
+        </div>
+        <AnimatePresence>
+          {isWeek1Expanded && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="grid grid-cols-1 gap-2">
+                {[1, 2, 3, 4, 5, 6, 0].map(day => { // Start from Monday (1) to Sunday (0)
+                  const dayPlans = plans.filter(p => p.daysOfWeek.includes(day));
+                  const { isCompleted, isMissed } = getDayStatus(day, dayPlans);
+                  
+                  return (
+                    <div key={day} className={`bg-zinc-900 border border-zinc-800 rounded-xl p-3 flex items-center justify-between transition-all ${isCompleted || isMissed || dayPlans.length === 0 ? 'opacity-60' : ''}`}>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3">
+                          <h3 className="font-bold text-brand-500 shrink-0 w-24">{fullDaysMap[day]}</h3>
+                          <div className="flex-1 min-w-0 flex flex-wrap gap-x-3 gap-y-1 items-center">
+                            {dayPlans.length > 0 ? (
+                              <>
+                                {dayPlans.map(plan => (
+                                  <span key={plan.id} className="text-zinc-400 text-xs truncate flex items-center gap-1">
+                                    <div className="w-1 h-1 rounded-full bg-brand-500/50" />
+                                    {plan.name}
+                                  </span>
+                                ))}
+                                {isMissed && (
+                                  <span className="text-red-500 text-[10px] font-bold uppercase tracking-wider ml-2">
+                                    Treino não realizado
+                                  </span>
+                                )}
+                                {isCompleted && (
+                                  <span className="text-green-500 text-[10px] font-bold uppercase tracking-wider ml-2">
+                                    Treino Finalizado
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-brand-500 text-xs italic">Descanso</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => onEditDay(day)}
+                        className="text-zinc-600 hover:text-zinc-300 p-1.5 ml-2 rounded-full hover:bg-zinc-800 transition-colors"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </section>
+
+      <section>
+        <div className="w-full flex items-center justify-between mb-4 group">
+          <button 
+            onClick={() => setIsWeek4Expanded(!isWeek4Expanded)}
+            className="flex items-center gap-2"
+          >
+            <h2 className="text-xl font-semibold">Semana 04</h2>
+            <ChevronRight 
+              className={`text-zinc-500 group-hover:text-zinc-300 transition-transform duration-200 ${isWeek4Expanded ? 'rotate-90' : ''}`} 
+              size={20} 
+            />
+          </button>
+          <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 opacity-60">
+            <Calendar size={14} className="text-zinc-500" />
+            <span className="text-zinc-500 font-mono text-sm font-medium">
+              {week4StartDate.getDate().toString().padStart(2, '0')}
+            </span>
+          </div>
+        </div>
+        <AnimatePresence>
+          {isWeek4Expanded && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="grid grid-cols-1 gap-2">
+                {[22, 23, 24, 25, 26, 27, 21].map(day => { // Start from Monday (22) to Sunday (21)
+                  const dayPlans = plans.filter(p => p.daysOfWeek.includes(day));
+                  const { isCompleted, isMissed } = getDayStatus(day, dayPlans);
+
+                  return (
+                    <div key={day} className={`bg-zinc-900 border border-zinc-800 rounded-xl p-3 flex items-center justify-between transition-all ${isCompleted || isMissed || dayPlans.length === 0 ? 'opacity-60' : ''}`}>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3">
+                          <h3 className="font-bold text-brand-500 shrink-0 w-24">{fullDaysMap[day % 7]}</h3>
+                          <div className="flex-1 min-w-0 flex flex-wrap gap-x-3 gap-y-1 items-center">
+                            {dayPlans.length > 0 ? (
+                              <>
+                                {dayPlans.map(plan => (
+                                  <span key={plan.id} className="text-zinc-400 text-xs truncate flex items-center gap-1">
+                                    <div className="w-1 h-1 rounded-full bg-brand-500/50" />
+                                    {plan.name}
+                                  </span>
+                                ))}
+                                {isMissed && (
+                                  <span className="text-red-500 text-[10px] font-bold uppercase tracking-wider ml-2">
+                                    Treino não realizado
+                                  </span>
+                                )}
+                                {isCompleted && (
+                                  <span className="text-green-500 text-[10px] font-bold uppercase tracking-wider ml-2">
+                                    Treino Finalizado
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-brand-500 text-xs italic">Descanso</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => onEditDay(day)}
+                        className="text-zinc-600 hover:text-zinc-300 p-1.5 ml-2 rounded-full hover:bg-zinc-800 transition-colors"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </section>
+
+      <section>
         <button 
           onClick={() => setIsAllWorkoutsExpanded(!isAllWorkoutsExpanded)}
           className="w-full flex items-center justify-between mb-4 group"
@@ -1386,7 +1819,10 @@ function WeeklyScheduleView({
         <div>
           <h1 className="text-2xl font-bold">Editar Agenda</h1>
           <p className="text-brand-500 font-medium">
-            {day > 6 ? `Semana 02 - ${fullDaysMap[day % 7]}` : `Semana 01 - ${fullDaysMap[day]}`}
+            {day >= 21 ? `Semana 04 - ${fullDaysMap[day % 7]}` :
+             day >= 14 ? `Semana 03 - ${fullDaysMap[day % 7]}` :
+             day >= 7 ? `Semana 02 - ${fullDaysMap[day % 7]}` :
+             `Semana 01 - ${fullDaysMap[day % 7]}`}
           </p>
         </div>
       </header>
@@ -3196,7 +3632,7 @@ const manualSections = [
     items: [
       { term: "1. Crie seus exercícios", desc: "Em Exercícios, cadastre cada movimento com grupo muscular, equipamento e tipo." },
       { term: "2. Monte um treino", desc: "Em Criar, agrupe exercícios num treino nomeado. Defina séries e valores padrão." },
-      { term: "3. Programe a semana", desc: "Na tela Início, atribua treinos a dias da Semana 01 e 02. O ciclo repete automaticamente." },
+      { term: "3. Programe a semana", desc: "Na tela Início, atribua treinos a dias da Semana 01 a 04. O ciclo repete automaticamente." },
       { term: "4. Execute", desc: "Toque em ▶ para iniciar. Confirme ou ajuste cada série. O app registra o que foi feito." },
       { term: "5. Acompanhe", desc: "Em Progresso, veja o histórico completo — série a série, sessão a sessão." },
     ]
@@ -3226,9 +3662,9 @@ const manualSections = [
   },
   {
     icon: <Calendar size={18} className="text-brand-500" />,
-    title: "Semana 01 e 02",
+    title: "Semana 01 a 04",
     items: [
-      { term: "Ciclo de 14 dias", desc: "Dois blocos semanais independentes. Útil para periodização A/B." },
+      { term: "Ciclo de 28 dias", desc: "Quatro blocos semanais independentes. Útil para periodização." },
       { term: "Data de início", desc: "Defina o início da Semana 01 tocando no ícone de calendário." },
       { term: "Treino Finalizado", desc: "Treino programado concluído naquele dia." },
       { term: "Treino não realizado", desc: "O dia passou sem o treino ser executado." },
