@@ -2603,8 +2603,8 @@ function HistoryView({ sessions, plans, availableExercises, onClearHistory }: { 
     };
   }).filter(d => d.sets > 0);
 
-  // Sort by sets descending
-  muscleChartData.sort((a, b) => b.sets - a.sets);
+  // Sort alphabetically
+  muscleChartData.sort((a, b) => a.name.localeCompare(b.name));
 
   const avgSets = muscleChartData.length > 0 
     ? muscleChartData.reduce((acc, d) => acc + d.sets, 0) / muscleChartData.length 
