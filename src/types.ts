@@ -55,7 +55,6 @@ export type Goal = 'maintenance' | 'weight_loss' | 'muscle_gain';
 export interface UserProfile {
   name: string;
   email?: string;
-  password?: string;
   weight: number;
   height: number;
   age: number;

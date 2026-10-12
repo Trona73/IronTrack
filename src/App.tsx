@@ -138,21 +138,12 @@ export default function App() {
     if (savedProfile) {
       const profile = JSON.parse(savedProfile);
       setUserProfile(profile);
-      // If profile exists and has email/password, require login
-      if (profile.email && profile.password) {
-        // Only enforce local auth if not using Supabase
-        if (!supabaseSession) {
-          setIsAuthenticated(false);
-          setShowAuth(true);
-        }
+      if (profile.name) {
+         setIsAuthenticated(true);
+         setShowAuth(false);
       } else {
-        if (profile.name) {
-           setIsAuthenticated(true);
-           setShowAuth(false);
-        } else {
-           setIsAuthenticated(false);
-           setShowAuth(true);
-        }
+         setIsAuthenticated(false);
+         setShowAuth(true);
       }
     } else {
       if (!supabaseSession) {
@@ -231,7 +222,7 @@ export default function App() {
               if (!isUuid) {
                 session.id = crypto.randomUUID();
               }
-              supabaseService.saveWorkoutSession(session).catch(e => console.error("Auto-sync error:", e));
+              supabaseService.saveWorkoutSession(session, userId).catch(e => console.error("Auto-sync error:", e));
             });
             // Update local storage with the fixed IDs
             localStorage.setItem('iron_sessions', JSON.stringify([...cloudSessions, ...localOnly].sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())));
@@ -408,15 +399,15 @@ useEffect(() => {
 
         const planToSave = { ...planWithDays, exercises: updatedExercises };
 
-        // Check if ID is a valid UUID (simple regex check)
-        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(planToSave.id);
-        
-        if (isUuid) {
+        // A plan already exists in Supabase if it was already present in the plans
+        // we loaded before this save. Checking the id's UUID-ness isn't reliable
+        // anymore: new plans are now created with crypto.randomUUID() client-side
+        // too, so they already "look like" a UUID before ever being inserted.
+        if (existingPlan) {
            await supabaseService.updateWorkoutPlan(planToSave);
            setPlans(prev => prev.map(p => p.id === plan.id ? planToSave : p));
         } else {
-           // If not a UUID (e.g. 'p1', 'p2'), create as new in Supabase
-           // and update local state with the real ID
+           // New plan: create it in Supabase and update local state with the real ID
            const newPlan = await supabaseService.createWorkoutPlan(planToSave, supabaseSession.user.id);
            setPlans(prev => prev.map(p => p.id === plan.id ? { ...newPlan, id: newPlan.id } : p));
         }
@@ -473,7 +464,7 @@ const duplicateWorkoutPlan = async (plan: WorkoutPlan) => {
       if (p.id === planId) {
         const newDays = p.daysOfWeek.includes(day)
           ? p.daysOfWeek.filter(d => d !== day)
-          : [...p.daysOfWeek, day].sort();
+          : [...p.daysOfWeek, day].sort((a, b) => a - b);
         return { ...p, daysOfWeek: newDays };
       }
       return p;
@@ -544,12 +535,20 @@ const resumeWorkout = () => {
     }
   };
 
-  const clearHistory = () => {
+  const clearHistory = async () => {
     setSessions([]);
+    localStorage.removeItem('iron_sessions');
+
+    if (supabaseSession) {
+      try {
+        await supabaseService.deleteAllWorkoutSessions(supabaseSession.user.id);
+      } catch (e) {
+        handleAuthError(e);
+      }
+    }
   };
 
   const handleLogin = async (email: string, pass: string) => {
-    // Try Supabase login first
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -558,51 +557,35 @@ const resumeWorkout = () => {
       if (!error) {
         return true;
       }
-      // If Supabase fails, fall back to local auth (legacy)
-      console.log('Supabase login failed, trying local:', error.message);
+      console.log('Supabase login failed:', error.message);
     } catch (e) {
       handleAuthError(e);
-    }
-
-    if (userProfile.email === email && userProfile.password === pass) {
-      setIsAuthenticated(true);
-      setShowAuth(false);
-      return true;
     }
     return false;
   };
 
-  const handleCreateAccount = async (profile: UserProfile): Promise<boolean> => {
-    // Try Supabase signup
-    if (profile.email && profile.password) {
-      try {
-        const { error } = await supabase.auth.signUp({
-          email: profile.email,
-          password: profile.password,
-          options: {
-            data: {
-              full_name: profile.name,
-            }
+  const handleCreateAccount = async (name: string, email: string, password: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: name,
           }
-        });
-        if (error) {
-          console.error('Supabase signup error:', error.message);
-          alert('Erro ao criar conta no Supabase: ' + error.message);
-          return false; // Don't proceed to local if Supabase fails (to avoid confusion)
         }
-        alert('Conta criada! Verifique seu email para confirmar.');
-        return true;
-      } catch (e) {
-        handleAuthError(e);
+      });
+      if (error) {
+        console.error('Supabase signup error:', error.message);
+        alert('Erro ao criar conta no Supabase: ' + error.message);
         return false;
       }
+      alert('Conta criada! Verifique seu email para confirmar.');
+      return true;
+    } catch (e) {
+      handleAuthError(e);
+      return false;
     }
-
-    // Local fallback (legacy)
-    setUserProfile(profile);
-    setIsAuthenticated(true);
-    setShowAuth(false);
-    return true;
   };
 
   const handleLogout = async () => {
@@ -615,7 +598,7 @@ const resumeWorkout = () => {
     setPlans([]);
     setSessions([]);
     setExercises(EXERCISES); // Reset to defaults
-    setUserProfile({ name: '', email: '', password: '' });
+    setUserProfile({ name: '', email: '' });
     
     // Clear local storage
     localStorage.removeItem('iron_plans');
@@ -3564,7 +3547,6 @@ function SettingsView({ onBack, onOpenManual, profile, onUpdateProfile }: { onBa
 function ProfileView({ profile, onSave, onLogout, isSupabaseConnected }: { profile: UserProfile, onSave: (p: UserProfile) => void, onLogout: () => void, isSupabaseConnected: boolean, key?: React.Key }) {
   const [localProfile, setLocalProfile] = useState(profile);
   const [isEditing, setIsEditing] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (field: keyof UserProfile, value: string | number) => {
     setLocalProfile(prev => ({ ...prev, [field]: value }));
@@ -3627,15 +3609,6 @@ function ProfileView({ profile, onSave, onLogout, isSupabaseConnected }: { profi
             <div>
               <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Email</label>
               <input type="email" value={localProfile.email || ''} onChange={e => handleChange('email', e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors" placeholder="seu@email.com" />
-            </div>
-            <div>
-              <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase tracking-wider">Senha</label>
-              <div className="relative">
-                <input type={showPassword ? "text" : "password"} value={localProfile.password || ''} onChange={e => handleChange('password', e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-lg focus:outline-none focus:border-brand-500 transition-colors pr-10" placeholder="Nova senha" />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300">
-                  {showPassword ? "Ocultar" : "Mostrar"}
-                </button>
-              </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -3768,7 +3741,7 @@ function ProfileView({ profile, onSave, onLogout, isSupabaseConnected }: { profi
   );
 }
 // --- Auth View ---
-function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (email: string, pass: string) => Promise<boolean>, onCreateAccount: (profile: UserProfile) => Promise<boolean>, existingProfile?: UserProfile, key?: React.Key }) {
+function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (email: string, pass: string) => Promise<boolean>, onCreateAccount: (name: string, email: string, password: string) => Promise<boolean>, existingProfile?: UserProfile, key?: React.Key }) {
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [isResetMode, setIsResetMode] = useState(false);
   const [email, setEmail] = useState('');
@@ -3834,15 +3807,7 @@ function AuthView({ onLogin, onCreateAccount, existingProfile }: { onLogin: (ema
           setLoading(false);
           return;
         }
-        const success = await onCreateAccount({
-          name,
-          email,
-          password,
-          weight: 0,
-          height: 0,
-          age: 0,
-          gender: 'other'
-        });
+        const success = await onCreateAccount(name, email, password);
         if (success) {
            setIsLoginMode(true);
            setMessage('Conta criada com sucesso! Faça login para continuar.');
